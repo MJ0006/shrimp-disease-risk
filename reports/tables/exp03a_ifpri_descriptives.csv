@@ -1,0 +1,16 @@
+quantity,value,unit,source,note
+farms_in_survey,1221.0,farms,commonvar: farmer_uid,"The publication says 1,222; we report what the released data contains."
+farms_reporting_disease,918.0,farms,modc9a: c900 == 1,
+farms_reporting_no_disease,303.0,farms,modc9a: c900 != 1,
+share_reporting_disease,75.18,%,derived: c900,
+farms_white_spot_disease,492.0,farms,modc9a: c901_1,The class the image model detects as WSSV.
+farms_black_gill,54.0,farms,modc9a: c901_4,"The image model's weakest class, and the rarest here."
+wsd_rows_in_module,492.0,rows,modc9b: shrimpdiseasename ~ white spot,
+wsd_loss_mean_bdt,23308.0,BDT,modc9b: c905,
+wsd_loss_median_bdt,15000.0,BDT,modc9b: c905,The direct disease-to-income link the base paper lacked.
+wsd_loss_max_bdt,250000.0,BDT,modc9b: c905,
+wsd_loss_n,492.0,farms,modc9b: c905,
+mortality_mean_pct_cleaned,32.5,%,modc9b: c904 with 9997 -> NaN,The defensible figure.
+mortality_mean_pct_if_sentinel_kept,819.6,%,modc9b: c904 as recorded,What the same column reports if the 9997 'don't know' code is treated as a number.
+mortality_sentinel_rows,94.0,rows,modc9b: c904 == 9997,The 'don't know' code.
+mortality_rows_between_101_and_9996,0.0,rows,modc9b: 100 < c904 < 9997,Load-bearing: the gap is what identifies 9997 as a code rather than a measurement. If this is ever non-zero the diagnosis is wrong.

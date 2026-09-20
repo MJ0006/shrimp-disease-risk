@@ -1,0 +1,4 @@
+risk_model,variable,minority_share,minority_n,reason
+income,had_black_gill,0.0443,54,minority share below 5%
+disease,had_black_gill,0.0475,22,minority share below 5%
+disease,bird_netting,0.041,19,minority share below 5%

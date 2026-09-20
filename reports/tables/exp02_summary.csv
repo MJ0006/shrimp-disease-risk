@@ -1,0 +1,4 @@
+condition,n,pct_test_leaked,test_f1_macro_mean,test_f1_macro_sd,test_acc_mean,test_acc_sd,best_val_f1_mean,train_seconds
+A_image_level_noaug,3,87.8633,0.741,0.0515,0.7611,0.0467,0.7718,105.7667
+B_image_level,3,87.8633,0.8215,0.0636,0.8285,0.0634,0.8505,128.7667
+C_specimen_level,3,0.0,0.6721,0.0004,0.695,0.0174,0.6945,102.9

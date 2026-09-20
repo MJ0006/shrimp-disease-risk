@@ -1,0 +1,13 @@
+risk_model,model_a,model_b,top_n,n_shared,share,shared_variables
+income,Cubist,GradientBoosting,10,10,1.0,blue_fencing; built_reserve_tank; district_khulna; district_satkhira; formulated_feed_only; organizer_supplied_pl; pcr_tested_pl_only; pond_area_ha; stopped_rice_in_gher; water_rainfed
+income,Cubist,RandomForest,10,10,1.0,blue_fencing; deepened_gher; inlet_mesh_screen; organizer_supplied_pl; pond_area_ha; pond_depth_ft; single_stocking_per_cycle; treats_water_before_stocking; uses_probiotics; water_rainfed
+income,Cubist,SVM_RBF,10,10,1.0,district_khulna; flooded_2022; had_white_spot; organizer_supplied_pl; pcr_tested_pl_only; pond_area_ha; single_stocking_per_cycle; spf_pl_only; uses_probiotics; water_river
+income,GradientBoosting,RandomForest,10,4,0.4,blue_fencing; organizer_supplied_pl; pond_area_ha; water_rainfed
+income,GradientBoosting,SVM_RBF,10,4,0.4,district_khulna; organizer_supplied_pl; pcr_tested_pl_only; pond_area_ha
+income,RandomForest,SVM_RBF,10,4,0.4,organizer_supplied_pl; pond_area_ha; single_stocking_per_cycle; uses_probiotics
+disease,Cubist,GradientBoosting,10,8,0.8,coordinated_stocking; deepened_gher; flooded_2022; had_black_gill; organizer_supplied_pl; water_canal; water_river; wsd_times_faced
+disease,Cubist,RandomForest,10,8,0.8,built_nursing_point; coordinated_stocking; deepened_gher; district_satkhira; flooded_2022; organizer_supplied_pl; water_canal; water_river
+disease,Cubist,SVM_RBF,10,9,0.9,coordinated_stocking; deepened_gher; flooded_2022; had_black_gill; organizer_supplied_pl; stopped_white_fish; uses_probiotics; water_canal; water_river
+disease,GradientBoosting,RandomForest,10,7,0.7,coordinated_harvest; coordinated_stocking; deepened_gher; flooded_2022; organizer_supplied_pl; water_canal; water_river
+disease,GradientBoosting,SVM_RBF,10,8,0.8,coordinated_harvest; coordinated_stocking; deepened_gher; flooded_2022; had_black_gill; organizer_supplied_pl; water_canal; water_river
+disease,RandomForest,SVM_RBF,10,7,0.7,coordinated_harvest; coordinated_stocking; deepened_gher; flooded_2022; organizer_supplied_pl; water_canal; water_river

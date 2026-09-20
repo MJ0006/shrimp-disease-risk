@@ -1,0 +1,5 @@
+risk_model,fold_scheme,n,n_clusters,best_model,cv_r2_mean,holdout_rmse,baseline_rmse,holdout_rmse_vs_mean_baseline,beats_mean,n_fits
+income,random_folds,1219,,Cubist,-0.0428,2.0984,2.0693,1.014,False,40
+income,cluster_grouped_folds,1219,68.0,Cubist,-0.0602,2.1381,2.1229,1.0072,False,10
+disease,random_folds,463,,Cubist,-0.1273,2.1112,1.9559,1.0794,False,40
+disease,cluster_grouped_folds,463,65.0,RandomForest,-0.0164,2.6978,2.6642,1.0126,False,10

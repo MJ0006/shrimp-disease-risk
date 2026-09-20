@@ -1,0 +1,4 @@
+sample,n,outcome,r_squared,breusch_pagan_p,reset2_p,beats_mean_on_holdout,skill_supported,note
+IFPRI 2023 baseline (disease),463,wsd_loss_bdt (log1p) -- financial loss,0.122,0.1947206588316303,0.0134593294882496,False,False,Stage 6; best model 1.0794x the mean baseline
+Hasan & Haque 2020 (A_no_water_quality),233,CurrentPrevalance(%) (log1p) -- share of stock infected,0.3536,0.13865503369866328,0.9603162107950364,True,False,best model 0.9207x the mean on 47 holdout farms; cv R2 +0.074 +/- 0.180
+Hasan & Haque 2020 (B_with_water_quality),148,CurrentPrevalance(%) (log1p) -- share of stock infected,0.4207,0.6283320611018207,0.3618602705079101,True,False,best model 0.9306x the mean on 30 holdout farms; cv R2 -0.983 +/- 2.177

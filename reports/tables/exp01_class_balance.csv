@@ -1,0 +1,5 @@
+class,train,val,test
+BG,125,40,33
+BG_WSSV,171,20,29
+Healthy,284,50,69
+WSSV,221,59,48

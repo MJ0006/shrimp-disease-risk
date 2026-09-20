@@ -1,0 +1,17 @@
+risk_model,n,driver,gamma,sd_ratio_p90_to_p10,replicates,power_at_05,detectable_at_80pct
+income,1219,pond_area_ha,0.0,1.0,400,0.0625,False
+income,1219,pond_area_ha,0.1,1.221,400,0.815,True
+income,1219,pond_area_ha,0.2,1.492,400,1.0,True
+income,1219,pond_area_ha,0.3,1.822,400,1.0,True
+income,1219,pond_area_ha,0.4,2.226,400,1.0,True
+income,1219,pond_area_ha,0.5,2.718,400,1.0,True
+income,1219,pond_area_ha,0.75,4.482,400,1.0,True
+income,1219,pond_area_ha,1.0,7.389,400,1.0,True
+disease,463,pond_area_ha,0.0,1.0,400,0.0475,False
+disease,463,pond_area_ha,0.1,1.221,400,0.3175,False
+disease,463,pond_area_ha,0.2,1.492,400,0.9475,True
+disease,463,pond_area_ha,0.3,1.822,400,1.0,True
+disease,463,pond_area_ha,0.4,2.226,400,1.0,True
+disease,463,pond_area_ha,0.5,2.718,400,1.0,True
+disease,463,pond_area_ha,0.75,4.482,400,1.0,True
+disease,463,pond_area_ha,1.0,7.389,400,1.0,True

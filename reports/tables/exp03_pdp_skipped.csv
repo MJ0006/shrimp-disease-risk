@@ -1,0 +1,3 @@
+risk_model,best_model,holdout_r2,rmse_vs_baseline,reason
+income,Cubist,-0.0287,1.014,no candidate beat the mean baseline; PDP would be uninterpretable
+disease,SVM_RBF,-0.225,1.0885,no candidate beat the mean baseline; PDP would be uninterpretable

@@ -1,0 +1,7 @@
+seed,image_source,n_train_images,n_val_images,n_test_images,n_test_specimens,pct_test_leaked,best_epoch,epochs_run,best_val_score,test_acc,test_f1_macro,test_f1_weighted,notebook_f1,gap_vs_notebook,train_seconds,f1_BG,f1_BG_WSSV,f1_Healthy,f1_WSSV,n_val_classes_present,smallest_val_class_n,run_artifact
+2025,cache_256,1035,57,57,55,94.74,6,9,0.8947,0.7719,0.7635,0.7776,0.638,0.1255,97.3,0.9091,0.5833,0.8947,0.6667,4,8,experiments/runs/exp02b/notebook_faithful_cache_256__seed2025.json
+7,cache_256,1035,57,57,53,96.49,1,4,0.7719,0.7193,0.7019,0.7054,0.638,0.0639,53.6,0.6667,0.7407,0.8,0.6,4,10,experiments/runs/exp02b/notebook_faithful_cache_256__seed7.json
+42,cache_256,1035,57,57,53,92.98,2,5,0.7544,0.8596,0.8086,0.8515,0.638,0.1706,58.2,0.7273,0.7273,0.902,0.878,4,6,experiments/runs/exp02b/notebook_faithful_cache_256__seed42.json
+2025,full_resolution,1035,57,57,55,94.74,5,8,0.8596,0.7895,0.769,0.7836,0.638,0.131,175.3,0.7368,0.72,0.9048,0.7143,4,8,experiments/runs/exp02b/notebook_faithful_full_resolution__seed2025.json
+7,full_resolution,1035,57,57,53,96.49,5,8,0.8947,0.8772,0.8629,0.8769,0.638,0.2249,160.3,0.8571,0.8,0.9524,0.8421,4,10,experiments/runs/exp02b/notebook_faithful_full_resolution__seed7.json
+42,full_resolution,1035,57,57,53,92.98,5,8,0.8421,0.8772,0.8693,0.8794,0.638,0.2313,169.8,0.8571,0.8571,0.913,0.85,4,6,experiments/runs/exp02b/notebook_faithful_full_resolution__seed42.json

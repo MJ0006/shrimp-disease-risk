@@ -1,0 +1,3 @@
+model,outcome,transform,n,k_including_constant,r_squared,adj_r_squared,f_pvalue,breusch_pagan_p,white_p,reset2_p,reset3_p,resid_skew,max_vif,n_vif_above_5,log_deviance_mean,log_deviance_sd,n_deviance_floored
+income,revenue_total_bdt,log,1219,32,0.2912,0.2727,8.807447678309618e-70,0.011549848401820363,0.00012914476454674493,4.326832079309257e-05,0.00014904235261462462,-0.103,2.67,0,-2.1006,2.1494,0
+disease,wsd_loss_bdt,log1p,463,31,0.122,0.061,1.7923623976216507e-08,0.1947206588316303,0.32411038961740496,0.013459329488249636,0.012345489334902407,-3.42,2.63,0,-1.0947,2.3289,0

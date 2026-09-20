@@ -1,0 +1,11 @@
+protocol,n_train_images,n_val_images,n_test_images,n_train_specimens,n_test_specimens,shared_train_test_specimens,shared_train_val_specimens,test_images_with_train_sibling,pct_test_leaked,pct_val_leaked,seed
+image_level,804,172,173,399,154,139,141,154,89.02,90.7,2025
+specimen_level,801,169,179,291,63,0,0,0,0.0,0.0,2025
+image_level,804,172,173,391,146,128,123,152,87.86,79.65,7
+specimen_level,798,177,174,291,63,0,0,0,0.0,0.0,7
+image_level,804,172,173,395,150,135,129,150,86.71,84.3,42
+specimen_level,814,163,172,291,63,0,0,0,0.0,0.0,42
+image_level,804,172,173,395,155,137,135,150,86.71,85.47,123
+specimen_level,804,168,177,291,63,0,0,0,0.0,0.0,123
+image_level,804,172,173,396,152,139,130,155,89.6,85.47,999
+specimen_level,806,168,175,291,63,0,0,0,0.0,0.0,999

@@ -1,0 +1,3 @@
+backbone,folds,temperature_mean,temperature_sd,ece_before_mean,ece_after_mean,ece_after_sd,mce_after_mean,brier_before_mean,brier_after_mean,overconfidence_after,f1_macro_mean,ece_reduction,target,verdict
+convnext_tiny,5,2.8517,0.4598,0.169,0.0671,0.0236,0.3698,0.4072,0.3561,-0.0298,0.7189,0.1019,0.05,"CLOSE (> 0.05) -- improved, limitation stays declared"
+mobilenetv3_large_100,5,3.9791,0.6507,0.218,0.0785,0.0181,0.2544,0.5032,0.4219,-0.0349,0.6705,0.1395,0.05,"CLOSE (> 0.05) -- improved, limitation stays declared"

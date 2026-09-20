@@ -1,0 +1,185 @@
+{
+  "tag": "notebook_faithful_full_resolution__seed7",
+  "config": {
+    "model_name": "rexnet_150",
+    "epochs": 50,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "batch_size": 16,
+    "img_size": 224,
+    "patience": 3,
+    "augment": false,
+    "class_weighted_loss": false,
+    "label_smoothing": 0.0,
+    "seed": 7,
+    "protocol": "image_level_unstratified",
+    "fold": 0,
+    "amp": true,
+    "optimizer": "adam",
+    "scheduler": "none",
+    "selection_metric": "micro_f1"
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.5721351233369487,
+      "train_f1": 0.5426915966161071,
+      "val_loss": 0.9735882449568364,
+      "val_f1": 0.6946386946386947,
+      "val_acc": 0.7017543859649122,
+      "seconds": 48.11415889999989
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.2754772982087688,
+      "train_f1": 0.8990892787513263,
+      "val_loss": 0.7065491278966268,
+      "val_f1": 0.793409205173911,
+      "val_acc": 0.8070175438596491,
+      "seconds": 15.175831900000048
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.10433485266091166,
+      "train_f1": 0.9635421801587221,
+      "val_loss": 0.8678935452511436,
+      "val_f1": 0.794305377264299,
+      "val_acc": 0.8070175438596491,
+      "seconds": 15.573659099999531
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.07455178441632773,
+      "train_f1": 0.9704437833777024,
+      "val_loss": 0.822235808037875,
+      "val_f1": 0.8188596491228071,
+      "val_acc": 0.8245614035087719,
+      "seconds": 15.881046000000424
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.06749895448495008,
+      "train_f1": 0.9746117070205325,
+      "val_loss": 0.7352878263122157,
+      "val_f1": 0.8900109474799877,
+      "val_acc": 0.8947368421052632,
+      "seconds": 16.111380600000302
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.05526254410329073,
+      "train_f1": 0.9807422719935641,
+      "val_loss": 0.7898362226653517,
+      "val_f1": 0.7406753672799886,
+      "val_acc": 0.7543859649122807,
+      "seconds": 16.30953860000045
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.0581587593048667,
+      "train_f1": 0.982249923546862,
+      "val_loss": 0.9130824553339105,
+      "val_f1": 0.7754464991307097,
+      "val_acc": 0.7719298245614035,
+      "seconds": 16.41058410000005
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.06322372915776635,
+      "train_f1": 0.9819834168262056,
+      "val_loss": 0.7727437312142891,
+      "val_f1": 0.6899393090569561,
+      "val_acc": 0.7192982456140351,
+      "seconds": 16.601995899999565
+    }
+  ],
+  "per_class": {
+    "BG": {
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1-score": 0.8571428571428571,
+      "support": 6.0
+    },
+    "BG_WSSV": {
+      "precision": 0.8,
+      "recall": 0.8,
+      "f1-score": 0.8,
+      "support": 10.0
+    },
+    "Healthy": {
+      "precision": 0.9523809523809523,
+      "recall": 0.9523809523809523,
+      "f1-score": 0.9523809523809523,
+      "support": 21.0
+    },
+    "WSSV": {
+      "precision": 0.8888888888888888,
+      "recall": 0.8,
+      "f1-score": 0.8421052631578947,
+      "support": 20.0
+    },
+    "accuracy": 0.8771929824561403,
+    "macro avg": {
+      "precision": 0.8478174603174603,
+      "recall": 0.888095238095238,
+      "f1-score": 0.862907268170426,
+      "support": 57.0
+    },
+    "weighted avg": {
+      "precision": 0.8820662768031189,
+      "recall": 0.8771929824561403,
+      "f1-score": 0.8769291650178075,
+      "support": 57.0
+    }
+  },
+  "confusion": [
+    [
+      6,
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      8,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      20,
+      1
+    ],
+    [
+      1,
+      2,
+      1,
+      16
+    ]
+  ],
+  "split_counts": {
+    "val": {
+      "Healthy": 20,
+      "WSSV": 15,
+      "BG": 12,
+      "BG_WSSV": 10
+    },
+    "test": {
+      "Healthy": 21,
+      "WSSV": 20,
+      "BG_WSSV": 10,
+      "BG": 6
+    }
+  },
+  "image_source": "full_resolution",
+  "environment": {
+    "python": "3.12.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "torch": "2.11.0+cu128",
+    "cuda_available": "True",
+    "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "cuda": "12.8",
+    "timm": "1.0.28"
+  }
+}

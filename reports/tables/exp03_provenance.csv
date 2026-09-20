@@ -1,0 +1,84 @@
+risk_model,name,kind,source,note
+income,pond_area_ha,observed,modc1-c2: c001 x 0.004046856,Unit conversion from decimals; a known constant adds no information.
+income,pond_depth_ft,observed,modc1-c2: c002,"Feet, as recorded."
+income,tenure_owned,observed,modc1-c2: c200 == 1,Recode of a categorical to a binary contrast against all other tenure.
+income,flooded_2022,observed,modc1-c2: c208 == 1,Yes/no recode.
+income,water_rainfed,observed,modc1-c2: c204_1,Multi-select flag.
+income,water_river,observed,modc1-c2: c204_3,Multi-select flag.
+income,water_canal,observed,modc1-c2: c204_4,Multi-select flag.
+income,in_cluster,observed,commonvar: rescluster == 1,Farm belongs to an organised shrimp cluster.
+income,district_khulna,observed,commonvar: districtname,Dummy; Bagerhat (the smallest district) is the reference.
+income,district_satkhira,observed,commonvar: districtname,Dummy; Bagerhat is the reference.
+income,faced_disease,observed,modc9a: c900 == 1,918 yes / 303 no.
+income,had_white_spot,observed,modc9a: c901_1,"NaN means the farm reported no disease at all, so it is a true no."
+income,had_black_gill,observed,modc9a: c901_4,Same treatment.
+income,deepened_gher,observed,modc1-c2: c003_1,Management action since 2021; multi-select flag recorded as 0/1.
+income,built_reserve_tank,observed,modc1-c2: c003_2,Management action since 2021; multi-select flag recorded as 0/1.
+income,built_nursing_point,observed,modc1-c2: c003_3,Management action since 2021; multi-select flag recorded as 0/1.
+income,blue_fencing,observed,modc1-c2: c003_4,Management action since 2021; multi-select flag recorded as 0/1.
+income,bird_netting,observed,modc1-c2: c003_5,Management action since 2021; multi-select flag recorded as 0/1.
+income,inlet_mesh_screen,observed,modc1-c2: c003_6,Management action since 2021; multi-select flag recorded as 0/1.
+income,stopped_white_fish,observed,modc1-c2: c003_10,Management action since 2021; multi-select flag recorded as 0/1.
+income,stopped_rice_in_gher,observed,modc1-c2: c003_11,Management action since 2021; multi-select flag recorded as 0/1.
+income,stopped_vegetables,observed,modc1-c2: c003_12,Management action since 2021; multi-select flag recorded as 0/1.
+income,treats_water_before_stocking,observed,modc1-c2: c003_13,Management action since 2021; multi-select flag recorded as 0/1.
+income,coordinated_stocking,observed,modc1-c2: c003_14,Management action since 2021; multi-select flag recorded as 0/1.
+income,single_stocking_per_cycle,observed,modc1-c2: c003_15,Management action since 2021; multi-select flag recorded as 0/1.
+income,organizer_supplied_pl,observed,modc1-c2: c003_16,Management action since 2021; multi-select flag recorded as 0/1.
+income,spf_pl_only,observed,modc1-c2: c003_17,Management action since 2021; multi-select flag recorded as 0/1.
+income,pcr_tested_pl_only,observed,modc1-c2: c003_18,Management action since 2021; multi-select flag recorded as 0/1.
+income,formulated_feed_only,observed,modc1-c2: c003_19,Management action since 2021; multi-select flag recorded as 0/1.
+income,uses_probiotics,observed,modc1-c2: c003_20,Management action since 2021; multi-select flag recorded as 0/1.
+income,coordinated_harvest,observed,modc1-c2: c003_21,Management action since 2021; multi-select flag recorded as 0/1.
+income,revenue_total_bdt,derived,modc3: sum over species of c304 x c308,"No revenue column exists. Constructed as quantity sold x average price, summed over all species. Reconcile against c1004 before use."
+income,revenue_shrimp_bdt,derived,"modc3: sum over ('Bagda Chingri', 'Golda Chingri', 'Harina Chingri', 'Chaka Chingri') of c304 x c308","Shrimp/prawn subtotal of the same construction; reported separately because the project's claims concern shrimp, not total farm output."
+income,stocking_cost_bdt,derived,modc3: sum of c303,"BDT throughout, so summation is unit-safe."
+income,qty_sold_kg,derived,modc3: sum of c304,kg throughout.
+income,qty_produced_kg,derived,modc3: sum of prod,kg throughout.
+income,n_species,derived,modc3: nunique(speciesname),"Polyculture breadth; a farm-level count, not a survey question."
+income,stocked_pieces,derived,modc3: sum of c301 where c301_u == 1,Pieces only. Never added to kilograms -- no conversion is recorded.
+income,stocked_kg,derived,modc3: sum of c301 where c301_u == 2,"Kilograms only, for the same reason."
+income,grows_bagda,derived,modc3: any speciesname == Bagda Chingri,"Black tiger shrimp, the species the image dataset photographs."
+disease,pond_area_ha,observed,modc1-c2: c001 x 0.004046856,Unit conversion from decimals; a known constant adds no information.
+disease,pond_depth_ft,observed,modc1-c2: c002,"Feet, as recorded."
+disease,tenure_owned,observed,modc1-c2: c200 == 1,Recode of a categorical to a binary contrast against all other tenure.
+disease,flooded_2022,observed,modc1-c2: c208 == 1,Yes/no recode.
+disease,water_rainfed,observed,modc1-c2: c204_1,Multi-select flag.
+disease,water_river,observed,modc1-c2: c204_3,Multi-select flag.
+disease,water_canal,observed,modc1-c2: c204_4,Multi-select flag.
+disease,in_cluster,observed,commonvar: rescluster == 1,Farm belongs to an organised shrimp cluster.
+disease,district_khulna,observed,commonvar: districtname,Dummy; Bagerhat (the smallest district) is the reference.
+disease,district_satkhira,observed,commonvar: districtname,Dummy; Bagerhat is the reference.
+disease,faced_disease,observed,modc9a: c900 == 1,918 yes / 303 no.
+disease,had_white_spot,observed,modc9a: c901_1,"NaN means the farm reported no disease at all, so it is a true no."
+disease,had_black_gill,observed,modc9a: c901_4,Same treatment.
+disease,deepened_gher,observed,modc1-c2: c003_1,Management action since 2021; multi-select flag recorded as 0/1.
+disease,built_reserve_tank,observed,modc1-c2: c003_2,Management action since 2021; multi-select flag recorded as 0/1.
+disease,built_nursing_point,observed,modc1-c2: c003_3,Management action since 2021; multi-select flag recorded as 0/1.
+disease,blue_fencing,observed,modc1-c2: c003_4,Management action since 2021; multi-select flag recorded as 0/1.
+disease,bird_netting,observed,modc1-c2: c003_5,Management action since 2021; multi-select flag recorded as 0/1.
+disease,inlet_mesh_screen,observed,modc1-c2: c003_6,Management action since 2021; multi-select flag recorded as 0/1.
+disease,stopped_white_fish,observed,modc1-c2: c003_10,Management action since 2021; multi-select flag recorded as 0/1.
+disease,stopped_rice_in_gher,observed,modc1-c2: c003_11,Management action since 2021; multi-select flag recorded as 0/1.
+disease,stopped_vegetables,observed,modc1-c2: c003_12,Management action since 2021; multi-select flag recorded as 0/1.
+disease,treats_water_before_stocking,observed,modc1-c2: c003_13,Management action since 2021; multi-select flag recorded as 0/1.
+disease,coordinated_stocking,observed,modc1-c2: c003_14,Management action since 2021; multi-select flag recorded as 0/1.
+disease,single_stocking_per_cycle,observed,modc1-c2: c003_15,Management action since 2021; multi-select flag recorded as 0/1.
+disease,organizer_supplied_pl,observed,modc1-c2: c003_16,Management action since 2021; multi-select flag recorded as 0/1.
+disease,spf_pl_only,observed,modc1-c2: c003_17,Management action since 2021; multi-select flag recorded as 0/1.
+disease,pcr_tested_pl_only,observed,modc1-c2: c003_18,Management action since 2021; multi-select flag recorded as 0/1.
+disease,formulated_feed_only,observed,modc1-c2: c003_19,Management action since 2021; multi-select flag recorded as 0/1.
+disease,uses_probiotics,observed,modc1-c2: c003_20,Management action since 2021; multi-select flag recorded as 0/1.
+disease,coordinated_harvest,observed,modc1-c2: c003_21,Management action since 2021; multi-select flag recorded as 0/1.
+disease,revenue_total_bdt,derived,modc3: sum over species of c304 x c308,"No revenue column exists. Constructed as quantity sold x average price, summed over all species. Reconcile against c1004 before use."
+disease,revenue_shrimp_bdt,derived,"modc3: sum over ('Bagda Chingri', 'Golda Chingri', 'Harina Chingri', 'Chaka Chingri') of c304 x c308","Shrimp/prawn subtotal of the same construction; reported separately because the project's claims concern shrimp, not total farm output."
+disease,stocking_cost_bdt,derived,modc3: sum of c303,"BDT throughout, so summation is unit-safe."
+disease,qty_sold_kg,derived,modc3: sum of c304,kg throughout.
+disease,qty_produced_kg,derived,modc3: sum of prod,kg throughout.
+disease,n_species,derived,modc3: nunique(speciesname),"Polyculture breadth; a farm-level count, not a survey question."
+disease,stocked_pieces,derived,modc3: sum of c301 where c301_u == 1,Pieces only. Never added to kilograms -- no conversion is recorded.
+disease,stocked_kg,derived,modc3: sum of c301 where c301_u == 2,"Kilograms only, for the same reason."
+disease,grows_bagda,derived,modc3: any speciesname == Bagda Chingri,"Black tiger shrimp, the species the image dataset photographs."
+disease,wsd_times_faced,observed,modc9b: c902,Number of White Spot episodes in the 2022 cycle.
+disease,wsd_mortality_pct,observed,modc9b: c904 with 9997 -> NaN,"Percentage of stock lost. The 9997 'don't know' code is removed; the value is otherwise as recorded, so it remains observed rather than derived."
+disease,wsd_loss_bdt,observed,modc9b: c905,Financial loss in BDT. No sentinel pattern; used as recorded.

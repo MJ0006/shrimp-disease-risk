@@ -1,0 +1,2 @@
+python,platform,torch,cuda_available,gpu,cuda,timm
+3.12.10,Windows-11-10.0.26200-SP0,2.11.0+cu128,True,NVIDIA GeForce RTX 5060 Laptop GPU,12.8,1.0.28

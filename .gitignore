@@ -1,0 +1,47 @@
+# Datasets -- 2.2 GB, and not ours to redistribute from here.
+# All three are openly licensed and are fetched from their own sources by the
+# scripts in this repository; see RUNBOOK.md section 3.
+data/
+
+# Thesis text. Deliberately excluded: the report is submitted for institutional
+# plagiarism screening, and a public copy of its text can be indexed and then
+# matched against the submission itself.
+docs/
+*.docx
+*.pptx
+~$*
+shrimp_disease_risk_project.ipynb
+
+# The project-level prompt and assistant guidance, not part of the software.
+FINAL MASTER PROMPT*.md
+CLAUDE.md
+
+# Environments and working material
+.venv/
+.scratch/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Third-party copyrighted papers. Read for this project, not ours to redistribute.
+*.pdf
+
+# Personal images
+*.jpeg
+*.jpg
+IMG-*
+WhatsApp*
+
+# Prior reference material: an inherited notebook that is not this student's work.
+f1-0-8-shrimp-disease-project-pytorch.ipynb
+
+# Assistant guidance files, not part of the software.
+GEMINI.md
+AGENTS.md
+.vscode/

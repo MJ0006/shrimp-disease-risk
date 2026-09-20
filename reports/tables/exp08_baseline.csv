@@ -1,0 +1,3 @@
+specification,target,estimate,std_error,t,p_value,r_squared,breusch_pagan_p,reset2_p,n
+S1_published,had_white_spot,0.013142,0.047767,0.27513,0.783216,0.291215,0.01155,4.3e-05,1219
+S2_bridge_facing,wsd_prevalence,-0.201695,0.110703,-1.821949,0.068463,0.288887,0.005208,9e-06,1190

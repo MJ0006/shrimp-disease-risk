@@ -1,0 +1,74 @@
+# Direct dependencies, pinned to the versions this project's results were produced with.
+#
+# Three entries are NOT imported by any module and are pinned deliberately:
+#   seaborn      -- not used; matplotlib alone draws every figure. Retained only to pin the
+#                   environment the stored results were produced in. Remove when that stops mattering.
+#   torchmetrics -- held for Experiment 02b, which must reproduce the inherited notebook's
+#                   micro-averaged F1 default rather than this project's macro-F1 (D-010).
+#   tqdm         -- not used; the trainer prints per-epoch lines instead.
+# Three more are imported only indirectly and would break if removed: scipy (sklearn/statsmodels),
+# openpyxl (pandas .xlsx engine), ipykernel (nbclient executes the notebook).
+# Transitive dependencies are resolved by pip and deliberately not pinned here.
+#
+# IMPORTANT — torch and torchvision are NOT installable from PyPI for this machine.
+# The RTX 5060 is a Blackwell GPU (compute capability sm_120) and needs a CUDA 12.8+ build,
+# which lives on PyTorch's own index. Install those two FIRST, with the index URL:
+#
+#     pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+#
+# then:  pip install -r requirements.txt
+#
+# On a machine with no NVIDIA GPU, drop the --index-url and plain `pip install torch
+# torchvision` gives the CPU build. Everything runs, just slower. See RUNBOOK.md.
+
+# --- deep learning (Track B: vision) -------------------------------------------------
+torch==2.11.0+cu128
+torchvision==0.26.0+cu128
+timm==1.0.28
+torchmetrics==1.9.0
+
+# --- scientific core ------------------------------------------------------------------
+numpy==2.5.2
+pandas==3.0.5
+scipy==1.18.1
+scikit-learn==1.9.0
+
+# --- econometrics (Track A) -----------------------------------------------------------
+statsmodels==0.14.6      # OLS with HC3 robust errors, Breusch-Pagan, White, VIF
+cubist==1.2.2            # the base paper's Cubist model; works with sklearn CV and PDP
+
+# --- figures ---------------------------------------------------------------------------
+matplotlib==3.11.1
+seaborn==0.13.2
+
+# --- file formats ----------------------------------------------------------------------
+pillow==12.3.0           # image decode/resize
+openpyxl==3.1.5          # the two .xlsx survey/summary workbooks
+pypdf==6.16.2            # base-paper text extraction
+
+# --- notebook ---------------------------------------------------------------------------
+# scripts/build_notebook.py writes shrimp_disease_risk_project.ipynb and executes it, so every
+# output stored in that file is real. ipykernel is the kernel the execution runs in.
+nbformat==5.11.1
+nbclient==0.11.0
+ipykernel==7.3.0
+
+# --- edge deployment ---------------------------------------------------------------------
+# scripts/export_edge_model.py exports the trained backbone to ONNX and quantises it to INT8
+# for the Stage 11 edge artefact; scripts/predict_farm.py runs inference through onnxruntime.
+# Both were imported without being pinned until 2026-09-20, so a clean-machine rebuild per
+# RUNBOOK.md broke the export, the demonstration CLI and 17 tests at import.
+onnx==1.22.0
+onnxruntime==1.30.0
+
+# --- report -------------------------------------------------------------------------------
+# scripts/build_report_docx.py writes the bound VIT report. Also unpinned until 2026-09-20.
+python-docx==1.2.0
+
+# --- presentation ------------------------------------------------------------------------
+# scripts/build_pptx.py renders docs/presentation/ppt_content.md into the Review-2 deck. The
+# Master Prompt forbids creating the .pptx unless explicitly requested (D-032 records the request).
+python-pptx==1.0.2
+
+# --- tooling ----------------------------------------------------------------------------
+pytest==9.1.1

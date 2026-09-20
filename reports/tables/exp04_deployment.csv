@@ -1,0 +1,6 @@
+model_name,total_params,trainable_params,size_mb,latency_ms_mean,latency_ms_std,device,role
+rexnet_150,7815277,7815277,30.05,8.043,0.569,cuda,inherited baseline architecture
+efficientnet_b0,4012672,4012672,15.468,6.9,0.664,cuda,standard efficiency baseline
+mobilenetv3_large_100,4207156,4207156,16.142,5.867,0.367,cuda,edge-class backbone
+convnext_tiny,27823204,27823204,106.137,4.764,0.351,cuda,ShrimpXNet's reported best
+resnet50,23516228,23516228,89.91,4.963,0.457,cuda,conventional reference point

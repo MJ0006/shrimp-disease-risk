@@ -1,0 +1,43 @@
+{
+  "config": {
+    "model_name": "mobilenetv3_large_100",
+    "epochs": 30,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "batch_size": 32,
+    "img_size": 224,
+    "patience": 7,
+    "augment": true,
+    "class_weighted_loss": false,
+    "label_smoothing": 0.0,
+    "seed": 2025,
+    "protocol": "specimen_level_kfold",
+    "fold": 0,
+    "amp": true,
+    "checkpoint_path": "C:\\Users\\MJ\\Downloads\\mini project\\reports\\models\\mobilenetv3_large_100_best.pt",
+    "optimizer": "adamw",
+    "scheduler": "cosine",
+    "selection_metric": "macro_f1"
+  },
+  "fold": 0,
+  "best_epoch": 10,
+  "best_val_f1": 0.605,
+  "test_acc": 0.7056,
+  "test_f1_macro": 0.681,
+  "test_f1_weighted": 0.7002,
+  "f1_BG": 0.6173,
+  "f1_BG_WSSV": 0.5946,
+  "f1_Healthy": 0.7389,
+  "f1_WSSV": 0.7733,
+  "checkpoint": "reports\\models\\mobilenetv3_large_100_best.pt",
+  "environment": {
+    "python": "3.12.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "torch": "2.11.0+cu128",
+    "cuda_available": "True",
+    "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "cuda": "12.8",
+    "timm": "1.0.28"
+  },
+  "caveat": "Single fold. This is a deployable artefact, not a benchmark result. The reported figure for this backbone is Experiment 04's 5-fold mean +/- SD; this fold's score is one draw from that distribution and must not be quoted as the model's performance."
+}
