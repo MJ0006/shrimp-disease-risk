@@ -1,6 +1,6 @@
 # Shrimp disease detection and farm-level economic risk
 
-Source code for an M.Tech Integrated capstone project at VIT Chennai, linking image-based
+Source code for an M.Tech Integrated mini project at VIT Chennai, linking image-based
 shrimp disease classification to a farm-level production risk model.
 
 **G Mohan Jayanth** (19MIS1127) · Guide: **Dr. M. Premalatha** · School of Computer Science
