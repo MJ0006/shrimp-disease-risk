@@ -21,6 +21,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from pptx import Presentation
+from pptx.dml.color import RGBColor
+from pptx.enum.dml import MSO_THEME_COLOR
+from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.opc.packuri import PackURI
 from pptx.oxml.ns import qn
@@ -51,7 +54,7 @@ PRESENTER_MARKERS = (
 
 @dataclass
 class Block:
-    kind: str                      # heading | para | bullets | numbers | table | figure | code | quote
+    kind: str                      # heading | para | bullets | numbers | table | figure | code | quote | flow
     text: str = ""
     items: list[str] = field(default_factory=list)
     rows: list[list[str]] = field(default_factory=list)
@@ -192,9 +195,16 @@ def parse_content(markdown: str) -> list[Slide]:
                 slide.blocks.append(Block("para", _strip_md(text)))
 
         index = 0
+        flow_next = False          # set by a [DIAGRAM: flow] line; applies to the next table
         while index < len(lines):
             line = lines[index].rstrip()
             stripped = line.strip()
+
+            if re.fullmatch(r"(?:\*\*)?\[DIAGRAM:\s*flow\](?:\*\*)?", stripped, re.IGNORECASE):
+                flush_para()
+                flow_next = True
+                index += 1
+                continue
 
             if not stripped or stripped == "---":
                 flush_para()
@@ -254,7 +264,8 @@ def parse_content(markdown: str) -> list[Slide]:
                         rows.append([_strip_md(c) for c in cells])
                     index += 1
                 if rows:
-                    slide.blocks.append(Block("table", rows=rows))
+                    slide.blocks.append(Block("flow" if flow_next else "table", rows=rows))
+                    flow_next = False
                 continue
 
             if stripped.startswith(">"):
@@ -398,6 +409,7 @@ GUTTER = Inches(0.30)
 BLOCK_GAP = Inches(0.12)
 TEXT_SHARE = 0.55
 
+FLOW_H = 2.80                              # inches: the three-box diagram on the overview slide
 BODY_SIZES = (20, 18, 16, 14, 13, 12)      # the reference deck sets body text at 20-24pt
 TABLE_SIZES = (14, 13, 12, 11, 10)
 CODE_PT = 12
@@ -466,6 +478,8 @@ def _block_height(block, width_in: float, body: int, table_font: int | float) ->
         return total + 0.12
     if block.kind == "code":
         return CODE_PT * 1.3 / 72 * len(block.text.split(NEWLINE)) + 0.16
+    if block.kind == "flow":
+        return FLOW_H + 0.20
     if block.kind in ("bullets", "numbers"):
         return sum(line * _lines_needed(i, width_in, body) + body * 0.6 / 72
                    for i in block.items) + 0.05
@@ -532,6 +546,58 @@ def _add_table(slide, rows, left, top, width, font_size: int | float):
     return shape, height
 
 
+def _draw_flow(slide, rows, left, top, width) -> None:
+    """Draw a table as connected boxes: one column per box, left to right, joined by arrows.
+
+    The header row names each box; every later row is one line inside it. This is the
+    overview slide's picture of the project, drawn from CONTENT like every other word on
+    the deck, so the diagram and the slide text cannot disagree.
+    """
+    n = len(rows[0])
+    arrow_w, gap = Inches(0.50), Inches(0.08)
+    box_w = int((width - (n - 1) * (arrow_w + 2 * gap)) / n)
+    head_h, body_h = Inches(0.62), Inches(FLOW_H) - Inches(0.62)
+    for c in range(n):
+        x = int(left + c * (box_w + arrow_w + 2 * gap))
+        head = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, top, box_w, head_h)
+        head.fill.solid()
+        head.fill.fore_color.theme_color = MSO_THEME_COLOR.ACCENT_1
+        head.line.fill.background()
+        frame = head.text_frame
+        frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+        _para(frame, rows[0][c], 22, bold=True, space_after=0, first=True)
+        frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+        for run in frame.paragraphs[0].runs:
+            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+        body = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, top + head_h, box_w, body_h)
+        body.fill.solid()
+        body.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        body.line.color.theme_color = MSO_THEME_COLOR.ACCENT_1
+        body.line.width = Pt(1.5)
+        frame = body.text_frame
+        frame.word_wrap = True
+        frame.vertical_anchor = MSO_ANCHOR.TOP
+        frame.margin_left = frame.margin_right = Inches(0.12)
+        frame.margin_top = Inches(0.10)
+        lines = [row[c] for row in rows[1:] if c < len(row) and row[c]]
+        for i, text in enumerate(lines):
+            last = i == len(lines) - 1
+            para = _para(frame, text, 14 if last else 16, italic=last, bold=(i == 0),
+                         space_after=6, first=(i == 0))
+            para.alignment = PP_ALIGN.CENTER
+            for run in para.runs:
+                run.font.color.theme_color = MSO_THEME_COLOR.TEXT_1
+
+        if c < n - 1:
+            arrow = slide.shapes.add_shape(
+                MSO_SHAPE.RIGHT_ARROW, x + box_w + gap,
+                int(top + (head_h + body_h) / 2 - Inches(0.30)), arrow_w, Inches(0.60))
+            arrow.fill.solid()
+            arrow.fill.fore_color.theme_color = MSO_THEME_COLOR.ACCENT_1
+            arrow.line.fill.background()
+
+
 def _place_figures(slide, figures, left, top, width, height) -> None:
     from PIL import Image
 
@@ -595,10 +661,19 @@ def fill_title_slide(slide, slide_data) -> None:
     details = [("Registration Number: ", "19MIS1127"),
                ("Name:", " G Mohan Jayanth"),
                ("Guide Name:", " Dr. M. Premalatha")]
+    tagline = next((b.text.split(":", 1)[1].strip() for b in slide_data.blocks
+                    if b.kind == "para" and b.text.startswith("Tagline:")), "")
     for shape in slide.placeholders:
         idx = shape.placeholder_format.idx
         if idx == 0:
             _replace_runs(shape.text_frame.paragraphs[0], [heading.upper()])
+            if tagline:
+                # One plain line under the registered title saying what the project does.
+                # The title itself stays verbatim; the tagline only adds to it.
+                frame = _textbox(slide, shape.left, shape.top + shape.height + Inches(0.05),
+                                 shape.width, Inches(0.45))
+                _para(frame, tagline, 20, italic=True, space_after=0, first=True)
+                frame.paragraphs[0].alignment = PP_ALIGN.CENTER
         elif idx == 1:
             for paragraph, pair in zip(shape.text_frame.paragraphs, details):
                 _replace_runs(paragraph, list(pair))
@@ -660,6 +735,9 @@ def render_slide(prs, slide_data) -> None:
         if block.kind == "table" and block.rows:
             _, drawn_h = _add_table(slide, block.rows, MARGIN, top, render_w, table_pt)
             top += drawn_h + BLOCK_GAP
+        elif block.kind == "flow" and block.rows:
+            _draw_flow(slide, block.rows, MARGIN, top, render_w)
+            top += Inches(_block_height(block, width_in, body_pt, table_pt))
         elif block.kind == "code":
             h = Inches(_block_height(block, width_in, body_pt, table_pt))
             frame = _textbox(slide, MARGIN, top, render_w, h)

@@ -870,7 +870,7 @@ def build_section_1(b):
     p_hod.paragraph_format.space_after = Pt(0)
     p_hod.paragraph_format.line_spacing = 1.15
     rh = p_hod.add_run(
-        "Approved by the Head of the Department\n\n\nName:\nDepartment of Software and Systems Engineering, SCOPE\nVellore Institute of Technology, Chennai\nDate:"
+        "Approved by the Head of the Department\n\n\nName: Dr. M. Premalatha\nDepartment of Software and Systems Engineering, SCOPE\nVellore Institute of Technology, Chennai\nDate:"
     )
     rh.font.name = "Times New Roman"
     rh.font.size = Pt(12)

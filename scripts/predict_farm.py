@@ -396,7 +396,7 @@ def main() -> int:
         print(f"  Measurement Error Distortion:     Overstates loss by {attenuation:,.2f} BDT")
     print("\n[Defense Note]")
     print("  * D-008: Decision-level fusion connects edge vision posteriors to farm risk.")
-    print("  * D-007: Image-to-specimen aggregation eliminates 87.98% split-leakage error.")
+    print("  * D-007: Photos are grouped by specimen, so a shrimp photographed 3 times counts once.")
     print("  * D-022: Results are generated LIVE on local CPU using deployed edge architecture.")
 
     if args.json:
