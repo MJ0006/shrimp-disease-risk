@@ -22,7 +22,7 @@ from pathlib import Path
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.dml import MSO_THEME_COLOR
+from pptx.enum.dml import MSO_LINE_DASH_STYLE, MSO_THEME_COLOR
 from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.opc.packuri import PackURI
@@ -425,7 +425,7 @@ BLOCK_GAP = Inches(0.12)
 TEXT_SHARE = 0.55
 
 FLOW_H = 2.80                              # inches: the three-box diagram on the overview slide
-LANES_H = 4.05                             # inches: the swim-lane diagram on the architecture slide
+LANES_H = 4.20                             # inches: the swim-lane diagram on the architecture slide
 BODY_SIZES = (20, 18, 16, 14, 13, 12)      # the reference deck sets body text at 20-24pt
 TABLE_SIZES = (14, 13, 12, 11, 10)
 CODE_PT = 12
@@ -616,11 +616,13 @@ def _draw_flow(slide, rows, left, top, width) -> None:
             arrow.line.fill.background()
 
 
-def _arrow(slide, x1, y1, x2, y2) -> None:
+def _arrow(slide, x1, y1, x2, y2, *, dashed=False) -> None:
     """A straight connector with an arrowhead at (x2, y2)."""
     line = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, int(x1), int(y1), int(x2), int(y2))
     line.line.width = Pt(2.5)
     line.line.color.theme_color = MSO_THEME_COLOR.TEXT_1
+    if dashed:
+        line.line.dash_style = MSO_LINE_DASH_STYLE.DASH
     ln = line.line._get_or_add_ln()
     ln.append(ln.makeelement(qn("a:tailEnd"), {"type": "triangle", "w": "med", "len": "med"}))
 
@@ -636,7 +638,15 @@ def _draw_lanes(slide, rows, flow, left, top, width) -> None:
 
     Arrows come from the "Flow:" line under the table: cells are named by lane letter and column
     number (A1 is the first box of the first lane), chained with ">", chains separated by ";".
+    The FIRST chain is the main path, and its boxes carry step numbers 1, 2, 3 in that order, so
+    the reading order survives a lane that runs right to left. A box that appears only in later
+    chains is a side input -- here, data used once offline -- and is drawn dashed, with a dashed
+    arrow and no number, so it cannot be mistaken for a step every pond goes through.
     """
+    chains = [[n.strip() for n in c.split(">")] for c in flow.split(";") if c.strip()]
+    main = chains[0] if chains else []
+    side = {n for chain in chains[1:] for n in chain} - set(main)
+
     lanes = rows[1:]
     n_lanes, n_cols = len(lanes), max(len(r) for r in lanes) - 1
     label_w, col_gap, lane_gap = Inches(1.95), Inches(0.55), Inches(0.30)
@@ -660,6 +670,7 @@ def _draw_lanes(slide, rows, flow, left, top, width) -> None:
         for c, cell in enumerate(lane[1:]):
             if not cell.strip():
                 continue
+            name = f"{chr(ord('A') + r)}{c + 1}"
             filled = cell.startswith("!")
             title, _, detail = cell.lstrip("!").strip().partition(" — ")
             x = int(grid_left + c * (box_w + col_gap))
@@ -674,12 +685,15 @@ def _draw_lanes(slide, rows, flow, left, top, width) -> None:
                 box.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
             box.line.color.theme_color = MSO_THEME_COLOR.ACCENT_1
             box.line.width = Pt(1.5)
+            if name in side:
+                box.line.color.theme_color = MSO_THEME_COLOR.TEXT_1
+                box.line.dash_style = MSO_LINE_DASH_STYLE.DASH
             frame = box.text_frame
             frame.word_wrap = True
             frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-            frame.margin_left = frame.margin_right = Inches(0.08)
+            frame.margin_left = frame.margin_right = Inches(0.10)
             frame.margin_top = frame.margin_bottom = Inches(0.04)
-            parts = [(title, 15, True)] + ([(detail, 12, False)] if detail else [])
+            parts = [(title, 16, True)] + ([(detail, 13, False)] if detail else [])
             for i, (text, size, bold) in enumerate(parts):
                 para = _para(frame, text, size, bold=bold, space_after=2, first=(i == 0))
                 para.alignment = PP_ALIGN.CENTER
@@ -688,19 +702,40 @@ def _draw_lanes(slide, rows, flow, left, top, width) -> None:
                         run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
                     else:
                         run.font.color.theme_color = MSO_THEME_COLOR.TEXT_1
-            boxes[f"{chr(ord('A') + r)}{c + 1}"] = (x, y + pad, box_w, lane_h - 2 * pad)
+            boxes[name] = (x, y + pad, box_w, lane_h - 2 * pad)
 
-    for chain in filter(None, (c.strip() for c in flow.split(";"))):
-        names = [n.strip() for n in chain.split(">")]
+    for chain_index, names in enumerate(chains):
         for a, b in zip(names, names[1:]):
             ax, ay, aw, ah = boxes[a]
             bx, by, bw, bh = boxes[b]
+            dashed = chain_index > 0
             if a[0] == b[0]:                       # same lane: left or right
                 y = ay + ah / 2
-                _arrow(slide, ax + aw, y, bx, y) if bx > ax else _arrow(slide, ax, y, bx + bw, y)
+                if bx > ax:
+                    _arrow(slide, ax + aw, y, bx, y, dashed=dashed)
+                else:
+                    _arrow(slide, ax, y, bx + bw, y, dashed=dashed)
             else:                                  # next lane: straight down
                 x = ax + aw / 2
-                _arrow(slide, x, ay + ah, x, by)
+                _arrow(slide, x, ay + ah, x, by, dashed=dashed)
+
+    # Step numbers last, so they sit on top of the boxes and arrows they straddle.
+    badge = Inches(0.36)
+    for step, name in enumerate(main, start=1):
+        x, y, _, _ = boxes[name]
+        dot = slide.shapes.add_shape(MSO_SHAPE.OVAL, int(x - badge / 2), int(y - badge / 2),
+                                     badge, badge)
+        dot.fill.solid()
+        dot.fill.fore_color.theme_color = MSO_THEME_COLOR.TEXT_1
+        dot.line.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        dot.line.width = Pt(1.25)
+        frame = dot.text_frame
+        frame.margin_left = frame.margin_right = frame.margin_top = frame.margin_bottom = 0
+        frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+        para = _para(frame, str(step), 13, bold=True, space_after=0, first=True)
+        para.alignment = PP_ALIGN.CENTER
+        for run in para.runs:
+            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
 
 
 def _place_figures(slide, figures, left, top, width, height) -> None:
