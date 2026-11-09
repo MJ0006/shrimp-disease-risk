@@ -23,7 +23,7 @@ from pathlib import Path
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.dml import MSO_THEME_COLOR
-from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.opc.packuri import PackURI
 from pptx.oxml.ns import qn
@@ -54,7 +54,7 @@ PRESENTER_MARKERS = (
 
 @dataclass
 class Block:
-    kind: str                      # heading | para | bullets | numbers | table | figure | code | quote | flow
+    kind: str                      # heading | para | bullets | numbers | table | figure | code | quote | flow | lanes
     text: str = ""
     items: list[str] = field(default_factory=list)
     rows: list[list[str]] = field(default_factory=list)
@@ -196,6 +196,7 @@ def parse_content(markdown: str) -> list[Slide]:
 
         index = 0
         flow_next = False          # set by a [DIAGRAM: flow] line; applies to the next table
+        lanes_next = False         # set by a [DIAGRAM: lanes] line; applies to the next table
         while index < len(lines):
             line = lines[index].rstrip()
             stripped = line.strip()
@@ -203,6 +204,19 @@ def parse_content(markdown: str) -> list[Slide]:
             if re.fullmatch(r"(?:\*\*)?\[DIAGRAM:\s*flow\](?:\*\*)?", stripped, re.IGNORECASE):
                 flush_para()
                 flow_next = True
+                index += 1
+                continue
+
+            if re.fullmatch(r"(?:\*\*)?\[DIAGRAM:\s*lanes\](?:\*\*)?", stripped, re.IGNORECASE):
+                flush_para()
+                lanes_next = True
+                index += 1
+                continue
+
+            # "Flow: A1>A2>B2; C1>C2" gives the arrows of the lanes diagram just above it.
+            if stripped.startswith("Flow:") and slide.blocks and slide.blocks[-1].kind == "lanes":
+                flush_para()
+                slide.blocks[-1].text = stripped[len("Flow:"):].strip()
                 index += 1
                 continue
 
@@ -264,8 +278,9 @@ def parse_content(markdown: str) -> list[Slide]:
                         rows.append([_strip_md(c) for c in cells])
                     index += 1
                 if rows:
-                    slide.blocks.append(Block("flow" if flow_next else "table", rows=rows))
-                    flow_next = False
+                    kind = "flow" if flow_next else "lanes" if lanes_next else "table"
+                    slide.blocks.append(Block(kind, rows=rows))
+                    flow_next = lanes_next = False
                 continue
 
             if stripped.startswith(">"):
@@ -410,6 +425,7 @@ BLOCK_GAP = Inches(0.12)
 TEXT_SHARE = 0.55
 
 FLOW_H = 2.80                              # inches: the three-box diagram on the overview slide
+LANES_H = 4.05                             # inches: the swim-lane diagram on the architecture slide
 BODY_SIZES = (20, 18, 16, 14, 13, 12)      # the reference deck sets body text at 20-24pt
 TABLE_SIZES = (14, 13, 12, 11, 10)
 CODE_PT = 12
@@ -480,6 +496,8 @@ def _block_height(block, width_in: float, body: int, table_font: int | float) ->
         return CODE_PT * 1.3 / 72 * len(block.text.split(NEWLINE)) + 0.16
     if block.kind == "flow":
         return FLOW_H + 0.20
+    if block.kind == "lanes":
+        return LANES_H + 0.15
     if block.kind in ("bullets", "numbers"):
         return sum(line * _lines_needed(i, width_in, body) + body * 0.6 / 72
                    for i in block.items) + 0.05
@@ -596,6 +614,93 @@ def _draw_flow(slide, rows, left, top, width) -> None:
             arrow.fill.solid()
             arrow.fill.fore_color.theme_color = MSO_THEME_COLOR.ACCENT_1
             arrow.line.fill.background()
+
+
+def _arrow(slide, x1, y1, x2, y2) -> None:
+    """A straight connector with an arrowhead at (x2, y2)."""
+    line = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, int(x1), int(y1), int(x2), int(y2))
+    line.line.width = Pt(2.5)
+    line.line.color.theme_color = MSO_THEME_COLOR.TEXT_1
+    ln = line.line._get_or_add_ln()
+    ln.append(ln.makeelement(qn("a:tailEnd"), {"type": "triangle", "w": "med", "len": "med"}))
+
+
+def _draw_lanes(slide, rows, flow, left, top, width) -> None:
+    """Draw a table as swim lanes: one band per row, one box per non-empty cell.
+
+    Layout comes from the table itself, so the picture is edited where the words are. The header
+    row is ignored. In every later row the first cell names the lane and each further cell is a
+    grid position: an empty cell leaves a gap, so a box can sit directly under the box that feeds
+    it. Text before " — " is the box's title, text after it the detail. A cell starting with "!"
+    is drawn filled, for the outputs a reader should find first.
+
+    Arrows come from the "Flow:" line under the table: cells are named by lane letter and column
+    number (A1 is the first box of the first lane), chained with ">", chains separated by ";".
+    """
+    lanes = rows[1:]
+    n_lanes, n_cols = len(lanes), max(len(r) for r in lanes) - 1
+    label_w, col_gap, lane_gap = Inches(1.95), Inches(0.55), Inches(0.30)
+    grid_left = left + label_w
+    box_w = int((width - label_w - (n_cols - 1) * col_gap) / n_cols)
+    lane_h = int((Inches(LANES_H) - (n_lanes - 1) * lane_gap) / n_lanes)
+    pad = Inches(0.10)
+    boxes = {}
+
+    for r, lane in enumerate(lanes):
+        y = int(top + r * (lane_h + lane_gap))
+        band = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, y, width, lane_h)
+        band.fill.solid()
+        band.fill.fore_color.theme_color = MSO_THEME_COLOR.ACCENT_1
+        band.fill.fore_color.brightness = 0.75
+        band.line.fill.background()
+        label = _textbox(slide, left + Inches(0.12), y, label_w - Inches(0.2), lane_h)
+        label.vertical_anchor = MSO_ANCHOR.MIDDLE
+        _para(label, lane[0], 18, bold=True, space_after=0, first=True)
+
+        for c, cell in enumerate(lane[1:]):
+            if not cell.strip():
+                continue
+            filled = cell.startswith("!")
+            title, _, detail = cell.lstrip("!").strip().partition(" — ")
+            x = int(grid_left + c * (box_w + col_gap))
+            box = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, y + pad, box_w,
+                                         lane_h - 2 * pad)
+            box.adjustments[0] = 0.12
+            box.fill.solid()
+            if filled:
+                box.fill.fore_color.theme_color = MSO_THEME_COLOR.ACCENT_1
+                box.fill.fore_color.brightness = -0.25
+            else:
+                box.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            box.line.color.theme_color = MSO_THEME_COLOR.ACCENT_1
+            box.line.width = Pt(1.5)
+            frame = box.text_frame
+            frame.word_wrap = True
+            frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+            frame.margin_left = frame.margin_right = Inches(0.08)
+            frame.margin_top = frame.margin_bottom = Inches(0.04)
+            parts = [(title, 15, True)] + ([(detail, 12, False)] if detail else [])
+            for i, (text, size, bold) in enumerate(parts):
+                para = _para(frame, text, size, bold=bold, space_after=2, first=(i == 0))
+                para.alignment = PP_ALIGN.CENTER
+                for run in para.runs:
+                    if filled:
+                        run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                    else:
+                        run.font.color.theme_color = MSO_THEME_COLOR.TEXT_1
+            boxes[f"{chr(ord('A') + r)}{c + 1}"] = (x, y + pad, box_w, lane_h - 2 * pad)
+
+    for chain in filter(None, (c.strip() for c in flow.split(";"))):
+        names = [n.strip() for n in chain.split(">")]
+        for a, b in zip(names, names[1:]):
+            ax, ay, aw, ah = boxes[a]
+            bx, by, bw, bh = boxes[b]
+            if a[0] == b[0]:                       # same lane: left or right
+                y = ay + ah / 2
+                _arrow(slide, ax + aw, y, bx, y) if bx > ax else _arrow(slide, ax, y, bx + bw, y)
+            else:                                  # next lane: straight down
+                x = ax + aw / 2
+                _arrow(slide, x, ay + ah, x, by)
 
 
 def _place_figures(slide, figures, left, top, width, height) -> None:
@@ -735,6 +840,9 @@ def render_slide(prs, slide_data) -> None:
         if block.kind == "table" and block.rows:
             _, drawn_h = _add_table(slide, block.rows, MARGIN, top, render_w, table_pt)
             top += drawn_h + BLOCK_GAP
+        elif block.kind == "lanes" and block.rows:
+            _draw_lanes(slide, block.rows, block.text, MARGIN, top, render_w)
+            top += Inches(_block_height(block, width_in, body_pt, table_pt))
         elif block.kind == "flow" and block.rows:
             _draw_flow(slide, block.rows, MARGIN, top, render_w)
             top += Inches(_block_height(block, width_in, body_pt, table_pt))
