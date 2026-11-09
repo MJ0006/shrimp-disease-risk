@@ -1,9 +1,9 @@
-"""Export MobileNetV3-Large to ONNX and dynamic INT8 for edge deployment.
+"""Export MobileNetV3-Large to ONNX and static INT8 for edge deployment.
 
 Stage 11 edge-deployment pipeline:
 1. Instantiates `mobilenetv3_large_100` (4-class classification head for shrimp disease).
 2. Exports PyTorch model to ONNX FP32 (`reports/models/mobilenetv3_large_100.onnx`).
-3. Quantises ONNX model to dynamic INT8 (`reports/models/mobilenetv3_large_100_int8.onnx`).
+3. Quantises ONNX model to static INT8 (`reports/models/mobilenetv3_large_100_int8.onnx`).
 4. Verifies numerical parity between PyTorch CPU and ONNX FP32 (< 1e-4 max absolute difference).
 5. Benchmarks CPU inference latency (20 warmup runs, 200 trials) for PyTorch CPU, ONNX FP32, and
    ONNX INT8 (reporting mean, std, p50, p90, p99 in ms).
@@ -15,7 +15,7 @@ Design notes
 Edge deployment requires measurable runtime properties rather than aspirational claims. While
 ConvNeXt-Tiny achieved the highest validation macro-F1 (0.7189), MobileNetV3-Large (0.6705 macro-F1)
 was selected as the candidate for edge deployment due to its 6.6x smaller parameter footprint
-(4.21 M vs 27.82 M) and 16.14 MB uncompressed footprint. Dynamic INT8 quantisation further reduces
+(4.21 M vs 27.82 M) and 16.14 MB uncompressed footprint. Static INT8 quantisation further reduces
 the binary size for constrained microcontroller or edge-gateway environments.
 """
 

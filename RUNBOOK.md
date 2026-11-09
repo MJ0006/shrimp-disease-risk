@@ -680,6 +680,7 @@ undocumented; `predict_farm.py` in particular is the Review-3 demonstration itse
 | **`scripts/train_edge_checkpoint.py`** | **Trains the deployment backbone on fold 0 and writes `reports/models/<backbone>_best.pt`. Must run BEFORE the export.** | **~90 s GPU** |
 | `scripts/export_edge_model.py` | ONNX FP32 + static INT8 export, parity check, latency benchmark, and held-out accuracy scoring. Refuses to run without a checkpoint unless given `--allow-untrained`. | ~2 min CPU |
 | **`scripts/predict_farm.py`** | **The Review-3 live demonstration.** Takes images or a directory, runs ONNX inference, aggregates to specimens, quantifies prevalence via SLD-EM, maps to farm risk in BDT. | seconds |
+| `scripts/make_demo_pond.py` | Builds `data/demo/pond_A/`: the 84 held-out fold-0 shrimp under neutral names, answer key beside it. Input for the demo in `docs/presentation/demo_run_sheet_review3.md`. | seconds |
 | `scripts/build_pptx_review3.py` | Renders `docs/presentation/ppt_content_review3.md` to the Review-3 deck. | seconds |
 | `scripts/build_report_docx.py` | Builds the bound report, reading every table from `reports/tables/`. | seconds |
 

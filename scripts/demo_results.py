@@ -436,8 +436,9 @@ def section_backbones() -> None:
         f"{r['backbone']} {r['f1_BG_mean']:.4f}" for _, r in ranked.iterrows()))
     print()
     _wrap("Most of that ranking is not real, and the script says so rather than leaving it to "
-          "the reader. convnext_tiny, resnet50 and rexnet_150 are statistically "
-          "indistinguishable; only efficientnet_b0 is clearly behind, at twice the noise. "
+          "the reader. Every adjacent pair sits inside the fold SD, so only the gap from top to "
+          "bottom is resolvable: efficientnet_b0 is behind by twice the noise. No significance "
+          "test was run, and five folds could not support one (D-027). "
           "About 83 test specimens per fold cannot resolve two or three points. Black Gill is "
           "the weakest class for every backbone without exception -- 75 specimens, the fewest "
           "of any class.")
@@ -568,13 +569,14 @@ def section_track_a() -> None:
         holds = r["breusch_pagan_p"] < 0.05
         rows.append([r["model"], r["outcome"], f"{r['n']:,}", f"{r['r_squared']:.4f}",
                      f"{r['f_pvalue']:.1e}", f"{r['breusch_pagan_p']:.4f}",
-                     "HOLDS" if holds else "FAILS"])
+                     "HOLDS" if holds else "NOT SHOWN"])
     _table(["risk model", "outcome", "n", "R^2", "F p", "BP p", "Just-Pope"],
            rows, "<<>>>><")
     print()
     _wrap("Just-Pope only has something to find when the variance depends on the inputs. For "
-          "income it does (p = 0.0115). For disease loss it does not (p = 0.195) -- so step 3 "
-          "was fitting flexible learners to what is essentially constant-variance noise.")
+          "income it does (p = 0.0115). For disease loss that is not shown (p = 0.195): the "
+          "test could not reject constant variance, so step 3 had nothing it could be expected "
+          "to find (D-026).")
     print()
 
     _source(TABLES / "exp03_step3_candidates.csv",
@@ -634,9 +636,11 @@ def section_lr_sweep() -> None:
     _table(["backbone", "lr", "folds", "macro-F1", "fold SD", "BG F1", "train time"],
            rows, "<<>>>><", gap=1)
     print()
-    _wrap("Varying learning rates across {1e-4, 3e-4, 1e-3} does not alter architecture ranking. "
-          "Every adjacent backbone pair sits within fold standard deviation (SD ~ 0.04), "
-          "confirming the architecture comparison is robust and not an artifact of LR tuning.")
+    _wrap("The sweep is partial (R17): convnext_tiny and resnet50 were never swept, and "
+          "mobilenetv3_large_100 ran one fold only. It does move the ranking: at lr 1e-3, "
+          "rexnet_150 and efficientnet_b0 (rows above) both score above the edge pick "
+          "mobilenetv3_large_100 in Result 4. The backbone ranking is therefore provisional, and the edge pick rests "
+          "on measured size, not on a settled ordering.")
 
 
 # ---------------------------------------------------------------------------------------
@@ -648,7 +652,7 @@ def section_export() -> None:
     if export is None:
         return
     _source(TABLES / "exp12_export.csv",
-            note="Stage 11 ONNX export and dynamic INT8 quantization benchmarked on CPU")
+            note="Stage 11 ONNX export and static INT8 quantization benchmarked on CPU")
     print()
 
     rows = []
@@ -834,7 +838,10 @@ def _closing(elapsed: float) -> None:
               f"individual shrimp")
     if exp01 is not None:
         image_level = exp01.loc[exp01["protocol"] == "image_level", "pct_test_leaked_mean"].iloc[0]
-        print(f"  leakage exposure {image_level:.2f}% image-level vs 0.00% specimen-level")
+        specimen_level = exp01.loc[exp01["protocol"] == "specimen_level",
+                                   "pct_test_leaked_mean"].iloc[0]
+        print(f"  leakage exposure {image_level:.2f}% image-level vs {specimen_level:.2f}% "
+              f"specimen-level")
     if exp02 is not None:
         b = exp02.loc[exp02["condition"] == "B_image_level", "test_f1_macro_mean"].iloc[0]
         c = exp02.loc[exp02["condition"] == "C_specimen_level", "test_f1_macro_mean"].iloc[0]
@@ -854,9 +861,12 @@ def _closing(elapsed: float) -> None:
               f"BP p {income['breusch_pagan_p']:.4f} -- null rejected")
         print(f"  Track A disease  R^2 {disease['r_squared']:.4f}, n={disease['n']:,}, "
               f"BP p {disease['breusch_pagan_p']:.3f} -- null NOT rejected")
-    if exp10 is not None:
-        print("  Stage 10 LR      sweep is PARTIAL; at lr 1e-3 rexnet (0.6862) and")
-        print("                   efficientnet (0.6757) both exceed the edge pick's 0.6705")
+    if exp10 is not None and exp04 is not None:
+        above = exp10[(exp10["lr"] == 1e-3) & (exp10["f1_macro_mean"] > edge["f1_macro_mean"])]
+        names = " and ".join(f"{r['backbone'].split('_')[0]} ({r['f1_macro_mean']:.4f})"
+                             for _, r in above.sort_values("f1_macro_mean", ascending=False).iterrows())
+        print("  Stage 10 LR      sweep is PARTIAL; at lr 1e-3")
+        _wrap(f"{names} score above the edge pick's {edge['f1_macro_mean']:.4f}", indent=" " * 19)
     if exp12 is not None:
         int8_row = exp12[exp12["precision"].str.contains("INT8", na=False)]
         if not int8_row.empty:
@@ -873,10 +883,11 @@ def _closing(elapsed: float) -> None:
         for path in dict.fromkeys(_SKIPPED):
             print(f"    - {path}")
         print()
-    _wrap("Every number printed above named the file it came from. Nothing in this script is "
-          "hard-coded except one published comparison figure and the worked-example posteriors "
-          "in the ILLUSTRATIVE block, both of which say so where they appear. The test suite "
-          "that guards these artefacts runs in about 100 seconds:")
+    _wrap("Every number in the tables and in this summary is read from the file named above it. "
+          "The commentary under the tables repeats some of those numbers in words, and two "
+          "inputs are typed in: one published comparison figure and the worked-example inputs "
+          "in the ILLUSTRATIVE block, both of which say so where they appear. The "
+          "test suite that guards these artefacts runs in about 100 seconds:")
     print()
     print("    .venv/Scripts/python.exe -m pytest")
     print()

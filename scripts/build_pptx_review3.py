@@ -7,7 +7,8 @@ Registered VTOP title (verbatim):
 "An Edge-Deployable Multimodal Deep Learning Framework for Early Shrimp Disease Detection Using Image"
 
 Renders `docs/presentation/ppt_content_review3.md` with notes from
-`docs/presentation/speaker_notes_review3.md`.
+`docs/presentation/speaker_notes_review3.md`, on the design template in
+`data/assets/review_template.pptx` (theme, font, title and closing slides).
 Output: `Review3_19MIS1127.pptx`.
 """
 
@@ -20,8 +21,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from pptx import Presentation
-from pptx.dml.color import RGBColor
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
+from pptx.opc.packuri import PackURI
+from pptx.oxml.ns import qn
 from pptx.util import Emu, Inches, Pt
 
 NEWLINE = chr(10)
@@ -29,17 +31,16 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CONTENT = PROJECT_ROOT / "docs" / "presentation" / "ppt_content_review3.md"
 NOTES = PROJECT_ROOT / "docs" / "presentation" / "speaker_notes_review3.md"
 
-# 16:9 widescreen layout
+# The deck is laid out on a content-free template taken from a reference review deck:
+# its theme (Savon, with its Avenir Next font swapped for Segoe UI), layouts, title slide and closing slide.
+# Only the design is used; every word on the slides comes from CONTENT.
+TEMPLATE = PROJECT_ROOT / "data" / "assets" / "review_template.pptx"
+TITLE_AND_CONTENT = "Title and Content"
+
+# 16:9 widescreen layout, matching the template
 SLIDE_W, SLIDE_H = Inches(13.333), Inches(7.5)
 
-INK = RGBColor(0x1A, 0x1A, 0x1A)
-ACCENT = RGBColor(0x0B, 0x4F, 0x8A)      # heading blue
-MUTED = RGBColor(0x5A, 0x5A, 0x5A)       # source lines
-RULE = RGBColor(0xD8, 0xDD, 0xE2)
-HEADER_FILL = RGBColor(0xEC, 0xF2, 0xF8)
-
-MARGIN = Inches(0.55)
-TITLE_H = Inches(0.95)
+MARGIN = Inches(0.85)                      # inside the template's framed panel
 
 PRESENTER_MARKERS = (
     "read this table before the review", "read this before the review", "say this out loud",
@@ -165,7 +166,8 @@ def parse_content(markdown: str) -> list[Slide]:
     for i in range(1, len(parts), 2):
         heading, body = parts[i].strip(), parts[i + 1]
 
-        match = re.match(r"Slide\s+(A?\d+)[^—\-–]*[—\-–]\s*(.*)", heading)
+        # A letter suffix ("6b") marks a continuation slide, which carries no notes of its own.
+        match = re.match(r"Slide\s+(A?\d+[a-z]?)[^—\-–]*[—\-–]\s*(.*)", heading)
         if not match:
             continue
         title = _strip_md(match.group(2))
@@ -296,7 +298,9 @@ def parse_content(markdown: str) -> list[Slide]:
                     else:
                         break
                 items = [_strip_md(item) for item in items]
-                slide.blocks.append(Block(kind, items=items))
+                # A numbered list continued from an earlier slide keeps its numbering.
+                start = int(re.match(r"\d+", stripped).group()) if number else 1
+                slide.blocks.append(Block(kind, items=items, start=start))
                 continue
 
             pending.append(stripped)
@@ -379,20 +383,24 @@ def parse_notes(markdown: str) -> dict[str, str]:
             continue
         text = re.sub(r"\n{3,}", "\n\n", _strip_md_block(body)).strip()
         text = _drop_anticipated_questions(text)
+        # Several note sections can share a slide number where slides were merged.
         for number in numbers:
-            out.setdefault(number, text)
+            out[number] = (out[number] + "\n\n" + text) if number in out else text
     return out
 
 
 # Layout constants
-CONTENT_TOP = Inches(1.28)
-CONTENT_BOTTOM = Inches(6.92)
+TITLE_TOP, TITLE_H = Inches(0.50), Inches(1.00)
+CONTENT_TOP = Inches(1.65)
+CONTENT_BOTTOM = Inches(6.85)
 CONTENT_H = CONTENT_BOTTOM - CONTENT_TOP
-GUTTER = Inches(0.28)
+GUTTER = Inches(0.30)
 BLOCK_GAP = Inches(0.12)
 TEXT_SHARE = 0.55
 
-BODY_PT, TABLE_PT = 14, 10.5
+BODY_SIZES = (20, 18, 16, 14, 13, 12)      # the reference deck sets body text at 20-24pt
+TABLE_SIZES = (14, 13, 12, 11, 10)
+CODE_PT = 12
 
 
 def _content_width():
@@ -408,49 +416,62 @@ def _textbox(slide, left, top, width, height):
     return frame
 
 
-def _para(frame, text: str, size: int | float, *, bold=False, italic=False, colour=INK,
-          space_after=5, bullet=False, first=False):
+def _set_bullet(paragraph, *, number_from: int | None = None) -> None:
+    """Give a text-box paragraph a hanging bullet like the template's own placeholders."""
+    pPr = paragraph._p.get_or_add_pPr()
+    pPr.set("marL", str(Inches(0.32)))
+    pPr.set("indent", str(-Inches(0.32)))
+    if number_from is not None:
+        pPr.append(pPr.makeelement(qn("a:buAutoNum"),
+                                   {"type": "arabicPeriod", "startAt": str(number_from)}))
+    else:
+        pPr.append(pPr.makeelement(qn("a:buFont"), {"typeface": "Arial"}))
+        pPr.append(pPr.makeelement(qn("a:buChar"), {"char": "◦"}))
+
+
+def _para(frame, text: str, size: int | float, *, bold=False, italic=False,
+          space_after=6, first=False):
+    """Add a paragraph in the theme font, so the template decides typeface and colour."""
     paragraph = frame.paragraphs[0] if first else frame.add_paragraph()
-    paragraph.text = ("•  " + text) if bullet else text
+    paragraph.text = text
     paragraph.space_after = Pt(space_after)
-    paragraph.line_spacing = 1.15
+    paragraph.line_spacing = 1.1
     for run in paragraph.runs:
         run.font.size = Pt(size)
         run.font.bold = bold
         run.font.italic = italic
-        run.font.color.rgb = colour
-        run.font.name = "Calibri"
     return paragraph
 
 
 def _lines_needed(text: str, width_in: float, size: int | float) -> int:
-    chars_per_line = max(12, int(width_in * 72 / (size * 0.48)))
+    chars_per_line = max(12, int((width_in - 0.32) * 72 / (size * 0.50)))
     return max(1, -(-len(text) // chars_per_line))
 
 
 def _block_height(block, width_in: float, body: int, table_font: int | float) -> float:
-    line = body * 1.22 / 72
+    line = body * 1.25 / 72
     if block.kind == "table":
         n_cols = len(block.rows[0])
         widths = [width_in * (0.30 if n_cols >= 4 else 0.36)] if n_cols > 2 else [width_in / n_cols]
         widths += [(width_in - widths[0]) / (n_cols - 1)] * (n_cols - 1) if n_cols > 1 else []
-        cell_line = table_font * 1.12 / 72
+        cell_line = table_font * 1.15 / 72
         total = 0.0
         for row in block.rows:
             lines = 1
             for c, cell in enumerate(row[:n_cols]):
-                usable = max(0.4, widths[min(c, len(widths) - 1)] - 0.14)
-                per_line = max(6, int(usable * 72 / (table_font * 0.48)))
+                usable = max(0.4, widths[min(c, len(widths) - 1)] - 0.2)
+                per_line = max(6, int(usable * 72 / (table_font * 0.44)))
                 lines = max(lines, -(-len(cell) // per_line))
-            total += max(0.22, lines * cell_line + 0.05)
+            total += max(0.29, lines * cell_line + 0.08)
         return total + 0.12
     if block.kind == "code":
-        return 0.020 * 10 * len(block.text.split(NEWLINE)) + 0.16
+        return CODE_PT * 1.3 / 72 * len(block.text.split(NEWLINE)) + 0.16
     if block.kind in ("bullets", "numbers"):
-        return sum(line * _lines_needed(i, width_in, body) + 0.028 for i in block.items) + 0.05
+        return sum(line * _lines_needed(i, width_in, body) + body * 0.6 / 72
+                   for i in block.items) + 0.05
     if block.kind == "heading":
-        return line * 1.2 + 0.08
-    return line * _lines_needed(block.text, width_in, body) + 0.08
+        return line * 1.3 + 0.08
+    return line * _lines_needed(block.text, width_in, body) + 0.10
 
 
 def _estimate_height(blocks, width_in: float, body: int, table_font: int | float) -> float:
@@ -458,46 +479,19 @@ def _estimate_height(blocks, width_in: float, body: int, table_font: int | float
                for b in blocks if b.kind != "figure")
 
 
-def _is_reference_list(title: str) -> bool:
-    return title.lower().startswith("references") or "references" in title.lower()
-
-
 def _pick_sizes(blocks, width_in: float) -> tuple[int, float]:
-    budget = CONTENT_H / Inches(1) * 1.08
-    for table_font in (TABLE_PT, 10, 9.5, 9, 8.5):
-        for body in (BODY_PT, 13, 12, 11):
+    budget = CONTENT_H / Inches(1)
+    for body in BODY_SIZES:
+        for table_font in TABLE_SIZES:
             if _estimate_height(blocks, width_in, body, table_font) <= budget:
                 return body, table_font
-    return 11, 8.5
-
-
-def _title_bar(slide, text: str, number: str) -> None:
-    bar = slide.shapes.add_shape(1, Emu(0), Emu(0), SLIDE_W, Inches(1.00))
-    bar.fill.solid()
-    bar.fill.fore_color.rgb = HEADER_FILL
-    bar.line.fill.background()
-    bar.shadow.inherit = False
-
-    accent = slide.shapes.add_shape(1, Emu(0), Inches(1.00), SLIDE_W, Inches(0.035))
-    accent.fill.solid()
-    accent.fill.fore_color.rgb = ACCENT
-    accent.line.fill.background()
-    accent.shadow.inherit = False
-
-    frame = _textbox(slide, MARGIN, Inches(0.14), _content_width() - Inches(1.0), Inches(0.74))
-    frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-    size = 24 if len(text) < 55 else (20 if len(text) < 85 else 17)
-    _para(frame, text, size, bold=True, colour=ACCENT, space_after=0, first=True)
-
-    tag = _textbox(slide, SLIDE_W - MARGIN - Inches(1.0), Inches(0.14), Inches(1.0), Inches(0.74))
-    tag.vertical_anchor = MSO_ANCHOR.MIDDLE
-    paragraph = _para(tag, f"Slide {number}", 12, bold=True, colour=MUTED, space_after=0, first=True)
-    paragraph.alignment = PP_ALIGN.RIGHT
+    return BODY_SIZES[-1], TABLE_SIZES[-1]
 
 
 def _add_table(slide, rows, left, top, width, font_size: int | float):
+    """A table in the template's default table style, as the reference deck uses."""
     n_rows, n_cols = len(rows), len(rows[0])
-    row_h = Inches(0.26 if font_size >= 10 else 0.23)
+    row_h = Inches(0.30)
     shape = slide.shapes.add_table(n_rows, n_cols, left, top, width, row_h * n_rows)
     table = shape.table
 
@@ -508,7 +502,7 @@ def _add_table(slide, rows, left, top, width, font_size: int | float):
             average = sum(len(row[c]) for row in rows if c < len(row)) / max(1, len(rows))
             weights.append(max(4.0, (longest + 2 * average) / 3))
         total = sum(weights)
-        floor = 0.55 * 914400
+        floor = 0.7 * 914400
         widths = [max(floor, width * w / total) for w in weights]
         overflow = sum(widths) - width
         if overflow > 0:
@@ -527,20 +521,15 @@ def _add_table(slide, rows, left, top, width, font_size: int | float):
         for c in range(n_cols):
             cell = table.cell(r, c)
             cell.text = row[c] if c < len(row) else ""
-            cell.margin_left = cell.margin_right = Inches(0.07)
-            cell.margin_top = cell.margin_bottom = Inches(0.02)
+            cell.margin_left = cell.margin_right = Inches(0.08)
+            cell.margin_top = cell.margin_bottom = Inches(0.04)
             cell.vertical_anchor = MSO_ANCHOR.MIDDLE
-            cell.fill.solid()
-            cell.fill.fore_color.rgb = HEADER_FILL if r == 0 else RGBColor(0xFF, 0xFF, 0xFF)
             paragraph = cell.text_frame.paragraphs[0]
             paragraph.space_after = Pt(0)
-            paragraph.line_spacing = 1.08
             for run in paragraph.runs:
                 run.font.size = Pt(font_size)
-                run.font.name = "Calibri"
-                run.font.bold = (r == 0)
-                run.font.color.rgb = ACCENT if r == 0 else INK
-    return shape, row_h * n_rows
+    height = Inches(_block_height(Block("table", rows=rows), width / Inches(1), BODY_SIZES[0], font_size))
+    return shape, height
 
 
 def _place_figures(slide, figures, left, top, width, height) -> None:
@@ -569,118 +558,104 @@ def _place_figures(slide, figures, left, top, width, height) -> None:
         )
 
 
-def render_title_slide(prs, slide_data) -> None:
-    """Render Slide 1: exact registered title, candidate and guide metadata cards, and institutional block."""
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
+def _replace_runs(paragraph, texts: list[str]) -> None:
+    """Overwrite a paragraph's runs in place, keeping each run's formatting."""
+    runs = paragraph.runs
+    for run, text in zip(runs, texts):
+        run.text = text
+    for run in runs[len(texts):]:
+        run._r.getparent().remove(run._r)
 
-    # Top accent band
-    band = slide.shapes.add_shape(1, Emu(0), Emu(0), SLIDE_W, Inches(0.18))
-    band.fill.solid()
-    band.fill.fore_color.rgb = ACCENT
-    band.line.fill.background()
-    band.shadow.inherit = False
 
-    # Exact registered title (VTOP registered verbatim)
-    REGISTERED_TITLE = "An Edge-Deployable Multimodal Deep Learning Framework for Early Shrimp Disease Detection Using Image"
-    heading = next((b.text for b in slide_data.blocks if "shrimp" in b.text.lower() and len(b.text) > 30), REGISTERED_TITLE)
-    frame = _textbox(slide, MARGIN, Inches(0.85), _content_width(), Inches(1.35))
-    paragraph = _para(frame, heading, 25, bold=True, colour=ACCENT, space_after=0, first=True)
-    paragraph.line_spacing = 1.18
+def _open_template():
+    """Load the template and keep only its title slide and its closing slide."""
+    prs = Presentation(TEMPLATE)
+    id_list = prs.slides._sldIdLst
+    entries = list(id_list)
+    for index, entry in enumerate(entries):
+        if index not in (0, len(entries) - 1):
+            prs.part.drop_rel(entry.rId)
+            id_list.remove(entry)
+    # New slides are named slide<N>.xml by count, which would collide with the kept
+    # closing slide's original name.
+    prs.slides[1].part.partname = PackURI("/ppt/slides/slide999.xml")
+    props = prs.core_properties
+    props.author = props.last_modified_by = "G Mohan Jayanth"
+    props.title = "Review 3 - 19MIS1127"
+    props.subject = props.keywords = props.comments = ""
+    return prs
 
-    # Subtitle / context line
-    frame_sub = _textbox(slide, MARGIN, Inches(2.28), _content_width(), Inches(0.36))
-    _para(frame_sub, "Review 3 — Final Project Review (Guide Evaluation: 30 Marks)",
-          13.5, bold=True, colour=MUTED, space_after=0, first=True)
 
-    # Subtle divider rule
-    rule = slide.shapes.add_shape(1, MARGIN, Inches(2.78), _content_width(), Emu(9525))
-    rule.fill.solid()
-    rule.fill.fore_color.rgb = RULE
-    rule.line.fill.background()
-    rule.shadow.inherit = False
+def fill_title_slide(slide, slide_data) -> None:
+    """The template's title slide, with the registered title and this project's details."""
+    registered = ("An Edge-Deployable Multimodal Deep Learning Framework for Early Shrimp "
+                  "Disease Detection Using Image")
+    heading = next((b.text for b in slide_data.blocks
+                    if "shrimp" in b.text.lower() and len(b.text) > 30), registered)
+    details = [("Registration Number: ", "19MIS1127"),
+               ("Name:", " G Mohan Jayanth"),
+               ("Guide Name:", " Dr. M. Premalatha")]
+    for shape in slide.placeholders:
+        idx = shape.placeholder_format.idx
+        if idx == 0:
+            _replace_runs(shape.text_frame.paragraphs[0], [heading.upper()])
+        elif idx == 1:
+            for paragraph, pair in zip(shape.text_frame.paragraphs, details):
+                _replace_runs(paragraph, list(pair))
+    if slide_data.notes:
+        slide.notes_slide.notes_text_frame.text = _clean_notes(slide_data.notes)
 
-    # Two parallel highlight cards for Candidate and Guide
-    card_w = (_content_width() - Inches(0.40)) / 2
-    card_top = Inches(3.12)
-    card_h = Inches(1.95)
 
-    # Left Card: Candidate
-    card_l = slide.shapes.add_shape(1, MARGIN, card_top, card_w, card_h)
-    card_l.fill.solid()
-    card_l.fill.fore_color.rgb = HEADER_FILL
-    card_l.line.color.rgb = RULE
-    card_l.line.width = Pt(1)
-    card_l.shadow.inherit = False
-
-    frame_l = _textbox(slide, MARGIN + Inches(0.28), card_top + Inches(0.22),
-                       card_w - Inches(0.56), card_h - Inches(0.44))
-    _para(frame_l, "PROJECT CANDIDATE", 11, bold=True, colour=MUTED, space_after=3, first=True)
-    _para(frame_l, "G Mohan Jayanth", 18, bold=True, colour=INK, space_after=3)
-    _para(frame_l, "Register No: 19MIS1127", 13, bold=False, colour=INK, space_after=2)
-    _para(frame_l, "M.Tech Integrated Software Engineering (5-Year)", 12, bold=False, colour=MUTED, space_after=0)
-
-    # Right Card: Guide
-    right_x = MARGIN + card_w + Inches(0.40)
-    card_r = slide.shapes.add_shape(1, right_x, card_top, card_w, card_h)
-    card_r.fill.solid()
-    card_r.fill.fore_color.rgb = HEADER_FILL
-    card_r.line.color.rgb = RULE
-    card_r.line.width = Pt(1)
-    card_r.shadow.inherit = False
-
-    frame_r = _textbox(slide, right_x + Inches(0.28), card_top + Inches(0.22),
-                       card_w - Inches(0.56), card_h - Inches(0.44))
-    _para(frame_r, "PROJECT GUIDE & SUPERVISOR", 11, bold=True, colour=MUTED, space_after=3, first=True)
-    _para(frame_r, "Dr. M. Premalatha", 18, bold=True, colour=INK, space_after=3)
-    _para(frame_r, "Professor & Head of Department", 13, bold=False, colour=INK, space_after=2)
-    _para(frame_r, "School of Computer Science and Engineering (SCOPE)", 12, bold=False, colour=MUTED, space_after=0)
-
-    # Institutional Block
-    frame_inst = _textbox(slide, MARGIN, Inches(5.35), _content_width(), Inches(1.10))
-    _para(frame_inst, "School of Computer Science and Engineering (SCOPE)",
-          14, bold=True, colour=ACCENT, space_after=2, first=True)
-    _para(frame_inst, "Vellore Institute of Technology, Chennai Campus",
-          13, bold=True, colour=INK, space_after=4)
-    _para(frame_inst, "Academic Year 2025–2026   ·   Review 3 (Final Guide Review: 30 Marks)   ·   September 2026",
-          11, bold=False, colour=MUTED, space_after=0)
-
-    # Footer / trace line
-    footer = _textbox(slide, MARGIN, Inches(6.85), _content_width(), Inches(0.30))
-    _para(footer, "Registered VTOP Title (Verbatim)   ·   Review 3 (Final Guide Review: 30 Marks)   ·   Commitment Matrix: Appendix Slide A1",
-          10, colour=MUTED, space_after=0, first=True)
+def fill_closing_slide(prs, slide, slide_data) -> None:
+    """Move the template's closing slide to the current end of the deck and set its text."""
+    id_list = prs.slides._sldIdLst
+    for entry in list(id_list):
+        if prs.part.related_part(entry.rId) is slide.part:
+            id_list.remove(entry)
+            id_list.append(entry)
+    text = next((b.text for b in slide_data.blocks if b.kind == "para"), slide_data.title)
+    _replace_runs(slide.shapes.title.text_frame.paragraphs[0], [text.upper()])
+    if slide_data.notes:
+        slide.notes_slide.notes_text_frame.text = _clean_notes(slide_data.notes)
 
 
 def _clean_notes(text: str) -> str:
+    text = re.sub(r"(?m)^#+\s*", "", text)               # markdown headings read as plain lines
     return _strip_md(_rejoin_wrapped_emphasis(text)).replace("**", "").replace("`", "")
 
 
 def render_slide(prs, slide_data) -> None:
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    _title_bar(slide, slide_data.title, slide_data.number)
+    layout = next(l for l in prs.slide_layouts if l.name == TITLE_AND_CONTENT)
+    slide = prs.slides.add_slide(layout)
+
+    title = slide.shapes.title
+    title.left, title.top, title.width, title.height = MARGIN, TITLE_TOP, _content_width(), TITLE_H
+    title.text = slide_data.title
+    title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+    for run in title.text_frame.paragraphs[0].runs:
+        run.font.size = Pt(40 if len(slide_data.title) <= 30 else 32)
+    # Content is placed as shapes below, so the body placeholder is not needed.
+    for shape in list(slide.placeholders):
+        if shape.placeholder_format.idx != 0:
+            shape._element.getparent().remove(shape._element)
 
     figures = [b for b in slide_data.blocks if b.kind == "figure"]
     others = [b for b in slide_data.blocks if b.kind != "figure"]
     has_figure = any((PROJECT_ROOT / f.path).exists() for f in figures)
 
-    content_top = CONTENT_TOP
-    content_bottom = CONTENT_BOTTOM
-    content_height = content_bottom - content_top
-
     if has_figure:
         text_w = Emu(int(_content_width() * TEXT_SHARE))
         fig_left = MARGIN + text_w + GUTTER
         fig_w = _content_width() - text_w - GUTTER
-        _place_figures(slide, figures, fig_left, content_top, fig_w, content_height)
+        _place_figures(slide, figures, fig_left, CONTENT_TOP, fig_w, CONTENT_H)
         render_w = text_w
     else:
         render_w = _content_width()
 
     width_in = render_w / Inches(1)
     body_pt, table_pt = _pick_sizes(others, width_in)
-    if _is_reference_list(slide_data.title):
-        body_pt = 11
 
-    top = content_top
+    top = CONTENT_TOP
     for block in others:
         if block.kind == "table" and block.rows:
             _, drawn_h = _add_table(slide, block.rows, MARGIN, top, render_w, table_pt)
@@ -688,43 +663,39 @@ def render_slide(prs, slide_data) -> None:
         elif block.kind == "code":
             h = Inches(_block_height(block, width_in, body_pt, table_pt))
             frame = _textbox(slide, MARGIN, top, render_w, h)
-            lines = block.text.split(NEWLINE)
-            for i, line in enumerate(lines):
+            for i, line in enumerate(block.text.split(NEWLINE)):
                 p = frame.paragraphs[0] if i == 0 else frame.add_paragraph()
                 p.text = line
                 p.space_after = Pt(0)
-                p.line_spacing = 1.05
+                p.line_spacing = 1.0
                 for run in p.runs:
                     run.font.name = "Consolas"
-                    run.font.size = Pt(9.5)
-                    run.font.color.rgb = INK
+                    run.font.size = Pt(CODE_PT)
             top += h + BLOCK_GAP
         elif block.kind == "heading":
-            h = Inches(0.36)
+            h = Inches(_block_height(block, width_in, body_pt, table_pt))
             frame = _textbox(slide, MARGIN, top, render_w, h)
-            _para(frame, block.text, body_pt + 1.5, bold=True, colour=ACCENT, space_after=3, first=True)
-            top += h + Inches(0.04)
+            _para(frame, block.text, body_pt + 2, bold=True, space_after=2, first=True)
+            top += h
         elif block.kind in ("bullets", "numbers"):
             h = Inches(_block_height(block, width_in, body_pt, table_pt))
             frame = _textbox(slide, MARGIN, top, render_w, h)
             for i, item in enumerate(block.items):
-                is_bullet = (block.kind == "bullets")
-                prefix = "" if is_bullet else f"{i + block.start}. "
-                _para(frame, prefix + item, body_pt, bullet=is_bullet, space_after=4, first=(i == 0))
+                paragraph = _para(frame, item, body_pt, space_after=body_pt * 0.45, first=(i == 0))
+                _set_bullet(paragraph, number_from=block.start if block.kind == "numbers" else None)
             top += h + BLOCK_GAP
         elif block.kind in ("para", "quote"):
             h = Inches(_block_height(block, width_in, body_pt, table_pt))
             frame = _textbox(slide, MARGIN, top, render_w, h)
-            italic = (block.kind == "quote")
-            _para(frame, block.text, body_pt, italic=italic, space_after=5, first=True)
+            _para(frame, block.text, body_pt, italic=(block.kind == "quote"), first=True)
             top += h + BLOCK_GAP
 
+    # The source file behind each slide goes in the notes, not on the slide face.
+    notes = _clean_notes(slide_data.notes) if slide_data.notes else ""
     if slide_data.source:
-        footer = _textbox(slide, MARGIN, Inches(7.02), _content_width(), Inches(0.30))
-        _para(footer, f"Traces to: {slide_data.source}", 9.5, colour=MUTED, space_after=0, first=True)
-
-    if slide_data.notes:
-        slide.notes_slide.notes_text_frame.text = _clean_notes(slide_data.notes)
+        notes = (notes + "\n\n" if notes else "") + f"Source: {slide_data.source}"
+    if notes:
+        slide.notes_slide.notes_text_frame.text = notes
 
 
 def _paginate(slide_data: Slide) -> list[Slide]:
@@ -736,17 +707,13 @@ def _paginate(slide_data: Slide) -> list[Slide]:
     render_w = _content_width() * TEXT_SHARE if has_figure else _content_width()
     width_in = render_w / Inches(1)
 
-    # Budget in inches
-    budget = CONTENT_H / Inches(1) * 1.08
+    budget = CONTENT_H / Inches(1)
     body_pt, table_pt = _pick_sizes(others, width_in)
-    if _is_reference_list(slide_data.title):
-        body_pt = 11
 
     total_h = _estimate_height(others, width_in, body_pt, table_pt)
     if total_h <= budget or len(others) <= 1:
         return [slide_data]
 
-    # Split into multiple pages
     pages: list[list[Block]] = []
     current: list[Block] = []
     current_h = 0.0
@@ -791,15 +758,16 @@ def main(argv: list[str] | None = None) -> int:
         if extra:
             slide.notes = (slide.notes + "\n\n" + extra).strip() if slide.notes else extra
 
-    prs = Presentation()
-    prs.slide_width, prs.slide_height = SLIDE_W, SLIDE_H
+    prs = _open_template()
+    title_slide, closing_slide = prs.slides[0], prs.slides[1]
 
     split = []
     for slide in slides:
         if slide.number == "1":
-            render_title_slide(prs, slide)
-            if slide.notes:
-                prs.slides[-1].notes_slide.notes_text_frame.text = _clean_notes(slide.notes)
+            fill_title_slide(title_slide, slide)
+            continue
+        if slide.title.lower() == "thank you":
+            fill_closing_slide(prs, closing_slide, slide)
             continue
         for part_index, part in enumerate(_paginate(slide)):
             render_slide(prs, part)
