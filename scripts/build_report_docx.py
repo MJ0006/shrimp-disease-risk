@@ -40,7 +40,7 @@ import numpy as np
 import pandas as pd
 import docx
 from docx.shared import Inches, Pt, Mm, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.section import WD_SECTION
 from docx.oxml import OxmlElement, parse_xml
@@ -316,6 +316,23 @@ def add_page_number_to_footer(footer, align=WD_ALIGN_PARAGRAPH.CENTER):
     fldSimple = OxmlElement("w:fldSimple")
     fldSimple.set(qn("w:instr"), "PAGE")
     run._r.append(fldSimple)
+
+
+def add_signature_line(doc, left, right="", right_size_pt=12, space_before=0):
+    """A bold signature line laid out as the MIS Project Template lays it out: `left` at the
+    margin and `right` flush with the right margin on the same line ("Date: ... Signature of the
+    Candidate"). The tab stop sits at the text width, A4 less the 1.5 in + 1.0 in side margins."""
+    p = doc.add_paragraph()
+    p.paragraph_format.space_before = Pt(space_before)
+    p.paragraph_format.space_after = Pt(6)
+    p.paragraph_format.tab_stops.add_tab_stop(Mm(146.5), WD_TAB_ALIGNMENT.RIGHT)
+    for text, size in ((left, 12), ("\t" + right if right else "", right_size_pt)):
+        if text:
+            r = p.add_run(text)
+            r.font.name = "Times New Roman"
+            r.font.size = Pt(size)
+            r.bold = True
+    return p
 
 
 class ReportBuilder:
@@ -739,9 +756,8 @@ def build_section_1(b):
     b.add_p("by", italic=True, size_pt=14, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=10)
     b.add_p("G MOHAN JAYANTH (19MIS1127)", bold=True, size_pt=16, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=16)
     b.add_logo(width_inches=3.0, space_before=6, space_after=18)
-    b.add_p("SCHOOL OF COMPUTER SCIENCE AND ENGINEERING", bold=True, size_pt=16, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=8)
-    b.add_p("VELLORE INSTITUTE OF TECHNOLOGY, CHENNAI", bold=True, size_pt=16, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=12)
-    b.add_p("September, 2026", size_pt=12, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=0)
+    b.add_p("SCHOOL OF COMPUTER SCIENCE AND ENGINEERING", bold=True, size_pt=16, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=12)
+    b.add_p("November, 2026", size_pt=12, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=0)
 
     b.doc.add_page_break()
 
@@ -756,16 +772,19 @@ def build_section_1(b):
     b.add_p("by", italic=True, size_pt=14, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=10)
     b.add_p("G MOHAN JAYANTH (19MIS1127)", bold=True, size_pt=16, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=16)
     b.add_logo(width_inches=3.0, space_before=6, space_after=18)
-    b.add_p("SCHOOL OF COMPUTER SCIENCE AND ENGINEERING", bold=True, size_pt=16, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=8)
-    b.add_p("VELLORE INSTITUTE OF TECHNOLOGY, CHENNAI", bold=True, size_pt=16, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=12)
-    b.add_p("September, 2026", size_pt=12, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=0)
+    b.add_p("SCHOOL OF COMPUTER SCIENCE AND ENGINEERING", bold=True, size_pt=16, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=12)
+    b.add_p("November, 2026", size_pt=12, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=0)
 
     b.doc.add_page_break()
 
-    # 3. Declaration
+    # 3. Declaration -- the MIS Project Template's declaration page: logo, underlined caps
+    # heading, indented one-and-a-half-spaced paragraphs, then Place and Date with the signature
+    # caption flush right on the Date line.
+    b.add_logo(width_inches=2.4, space_before=0, space_after=8)
+
     p_dec = b.doc.add_paragraph()
     p_dec.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_dec.paragraph_format.space_before = Pt(24)
+    p_dec.paragraph_format.space_before = Pt(4)
     p_dec.paragraph_format.space_after = Pt(20)
     run_dec = p_dec.add_run("DECLARATION")
     run_dec.font.name = "Times New Roman"
@@ -773,108 +792,64 @@ def build_section_1(b):
     run_dec.bold = True
     run_dec.underline = True
 
-    b.add_p(
-        "I hereby declare that the thesis entitled “AN EDGE-DEPLOYABLE MULTIMODAL DEEP LEARNING FRAMEWORK FOR EARLY SHRIMP DISEASE DETECTION USING IMAGE” submitted by me, for the award of the degree of M.Tech. (Integrated) in Software Engineering, Vellore Institute of Technology, Chennai, is a record of bonafide work carried out by me under the supervision of Dr. M. Premalatha, Professor and Head, Department of Software & Systems Engineering, School of Computer Science and Engineering, Vellore Institute of Technology, Chennai.",
-        space_after=14,
-    )
+    for text, after in (
+        ("I hereby declare that the thesis entitled “AN EDGE-DEPLOYABLE MULTIMODAL DEEP LEARNING FRAMEWORK FOR EARLY SHRIMP DISEASE DETECTION USING IMAGE” submitted by me, for the award of the degree of M.Tech. (Integrated) in Software Engineering, Vellore Institute of Technology, Chennai, is a record of bonafide work carried out by me under the supervision of Dr. M. Premalatha, Professor and Head, Department of Software & Systems Engineering, School of Computer Science and Engineering, Vellore Institute of Technology, Chennai.", 6),
+        ("I further declare that the work reported in this thesis has not been submitted and will not be submitted, either in part or in full, for the award of any other degree or diploma in this institute or any other institute or university.", 40),
+    ):
+        p = b.add_p(text, space_after=after, line_spacing=1.5)
+        p.paragraph_format.first_line_indent = Inches(0.5)
 
-    b.add_p(
-        "I further declare that the work reported in this thesis has not been submitted and will not be submitted, either in part or in full, for the award of any other degree or diploma in this institute or any other institute or university.",
-        space_after=35,
-    )
-
-    p_sig = b.doc.add_paragraph()
-    p_sig.paragraph_format.space_before = Pt(20)
-    p_sig.paragraph_format.space_after = Pt(6)
-    p_sig.paragraph_format.line_spacing = 1.3
-    r_place = p_sig.add_run("Place: Chennai\nDate:")
-    r_place.font.name = "Times New Roman"
-    r_place.font.size = Pt(12)
-
-    p_cand = b.doc.add_paragraph()
-    p_cand.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_cand.paragraph_format.space_before = Pt(24)
-    p_cand.paragraph_format.space_after = Pt(0)
-    r_cand = p_cand.add_run("Signature of the Candidate\n")
-    r_cand.font.name = "Times New Roman"
-    r_cand.font.size = Pt(14)
-    r_cand.bold = True
-    r_cand_name = p_cand.add_run("G MOHAN JAYANTH (19MIS1127)")
-    r_cand_name.font.name = "Times New Roman"
-    r_cand_name.font.size = Pt(12)
+    add_signature_line(b.doc, "Place: Chennai")
+    add_signature_line(b.doc, "Date:", "Signature of the Candidate", right_size_pt=14, space_before=8)
 
     b.doc.add_page_break()
 
-    # 4. Certificate
+    # 4. Certificate -- the template's wording verbatim, its placeholders filled. The runs set in
+    # bold are the ones the template sets in bold: title, name, register number and degree.
     b.add_logo(width_inches=2.4, space_before=0, space_after=8)
+    b.add_p("School of Computer Science and Engineering", bold=True, size_pt=14,
+            align=WD_ALIGN_PARAGRAPH.CENTER, space_after=16)
+    b.add_p("CERTIFICATE", size_pt=16, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=14)
 
-    p_cert = b.doc.add_paragraph()
-    p_cert.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_cert.paragraph_format.space_before = Pt(4)
-    p_cert.paragraph_format.space_after = Pt(12)
-    run_cert = p_cert.add_run("BONAFIDE CERTIFICATE")
-    run_cert.font.name = "Times New Roman"
-    run_cert.font.size = Pt(14)
-    run_cert.bold = True
-    run_cert.underline = True
+    p_cert = b.add_p(space_after=16, line_spacing=1.5)
+    p_cert.paragraph_format.first_line_indent = Inches(0.5)
+    for text, bold in (
+        ("This is to certify that the report entitled ", False),
+        ("“AN EDGE-DEPLOYABLE MULTIMODAL DEEP LEARNING FRAMEWORK FOR EARLY SHRIMP DISEASE DETECTION USING IMAGE”", True),
+        (" is prepared and submitted by ", False),
+        ("G MOHAN JAYANTH", True),
+        (" (", False),
+        ("19MIS1127", True),
+        (") to Vellore Institute of Technology, Chennai, in partial fulfillment of the requirement for the award of the degree of ", False),
+        ("M.Tech. (Integrated) in Software Engineering", True),
+        (" is a bonafide record carried out under my guidance. The project fulfills the requirements as per the regulations of this University and in my opinion meets the necessary standards for submission. The contents of this report have not been submitted and will not be submitted either in part or in full, for the award of any other degree or diploma and the same is certified.", False),
+    ):
+        r = p_cert.add_run(text)
+        r.font.name = "Times New Roman"
+        r.font.size = Pt(12)
+        r.bold = bold
 
-    b.add_p(
-        "This is to certify that the thesis entitled “AN EDGE-DEPLOYABLE MULTIMODAL DEEP LEARNING FRAMEWORK FOR EARLY SHRIMP DISEASE DETECTION USING IMAGE” submitted by G MOHAN JAYANTH (Reg. No. 19MIS1127) to Vellore Institute of Technology, Chennai, for the award of the degree of M.Tech. (Integrated) in Software Engineering is a bonafide record of research work carried out by him under my supervision and guidance.",
-        space_after=10,
-        line_spacing=1.35,
-    )
+    for line in ("Signature of the Guide:", "Name: Dr. M. Premalatha", "Date:"):
+        b.add_p(line, align=WD_ALIGN_PARAGRAPH.LEFT, space_after=10)
 
-    b.add_p(
-        "The contents of this thesis have not been submitted and will not be submitted, either in part or in full, to any other University or Institute for the award of any degree or diploma. The research work complies with all institutional academic integrity and plagiarism guidelines.",
-        space_after=14,
-        line_spacing=1.35,
-    )
-
-    p_guide = b.doc.add_paragraph()
-    p_guide.paragraph_format.space_before = Pt(8)
-    p_guide.paragraph_format.space_after = Pt(12)
-    p_guide.paragraph_format.line_spacing = 1.15
-    rg = p_guide.add_run(
-        "Signature of the Guide:\n\n\nName: Dr. M. Premalatha\nDesignation: Professor and Head, Department of Software and Systems Engineering, SCOPE\nDate:"
-    )
-    rg.font.name = "Times New Roman"
-    rg.font.size = Pt(12)
-
-    # Examiner blocks
+    # Examiner blocks, side by side as in the template
     tbl_exam = b.doc.add_table(rows=1, cols=2)
     tbl_exam.alignment = WD_TABLE_ALIGNMENT.CENTER
-    cell_ex1 = tbl_exam.cell(0, 0)
-    cell_ex2 = tbl_exam.cell(0, 1)
-    cell_ex1.width = Inches(3.0)
-    cell_ex2.width = Inches(3.0)
-
-    p_ex1 = cell_ex1.paragraphs[0]
-    p_ex1.paragraph_format.line_spacing = 1.15
-    p_ex1.paragraph_format.space_after = Pt(0)
-    p_ex1.add_run("Signature of Examiner 1:\n\n\nName:\nDate:")
-    for r in p_ex1.runs:
+    for cell, n in zip(tbl_exam.rows[0].cells, (1, 2)):
+        cell.width = Inches(3.0)
+        p_ex = cell.paragraphs[0]
+        p_ex.paragraph_format.space_before = Pt(14)
+        p_ex.paragraph_format.space_after = Pt(0)
+        p_ex.paragraph_format.line_spacing = 1.5
+        r = p_ex.add_run(f"Signature of the Examiner {n}\nName:\nDate:")
         r.font.name = "Times New Roman"
         r.font.size = Pt(12)
 
-    p_ex2 = cell_ex2.paragraphs[0]
-    p_ex2.paragraph_format.line_spacing = 1.15
-    p_ex2.paragraph_format.space_after = Pt(0)
-    p_ex2.add_run("Signature of Examiner 2:\n\n\nName:\nDate:")
-    for r in p_ex2.runs:
-        r.font.name = "Times New Roman"
-        r.font.size = Pt(12)
-
-    p_hod = b.doc.add_paragraph()
-    p_hod.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_hod.paragraph_format.space_before = Pt(12)
-    p_hod.paragraph_format.space_after = Pt(0)
-    p_hod.paragraph_format.line_spacing = 1.15
-    rh = p_hod.add_run(
-        "Approved by the Head of the Department\n\n\nName: Dr. M. Premalatha\nDepartment of Software and Systems Engineering, SCOPE\nVellore Institute of Technology, Chennai\nDate:"
-    )
-    rh.font.name = "Times New Roman"
-    rh.font.size = Pt(12)
-    rh.bold = True
+    # The template ends the page with the approval line alone; the Head of Department's name
+    # under it was added by the student on 2026-11-09 and is kept.
+    b.add_p("Approved by the Head of Department", size_pt=14, align=WD_ALIGN_PARAGRAPH.RIGHT,
+            space_before=40, space_after=4)
+    b.add_p("Name: Dr. M. Premalatha", align=WD_ALIGN_PARAGRAPH.RIGHT, space_after=0)
 
 
 # ---------------------------------------------------------------------------
@@ -968,17 +943,8 @@ def build_section_2(b):
         "My sincere thanks to all the faculty and staff members at Vellore Institute of Technology, Chennai, who helped me acquire the requisite knowledge. I would like to thank my parents for their support. It is indeed a pleasure to thank my friends who encouraged me to take up and complete this task."
     )
 
-    p_acksig = b.doc.add_paragraph()
-    p_acksig.paragraph_format.space_before = Pt(25)
-    p_acksig.paragraph_format.space_after = Pt(0)
-    p_acksig.paragraph_format.line_spacing = 1.2
-    ra_pl = p_acksig.add_run("Place: Chennai\nDate:\n\n")
-    ra_pl.font.name = "Times New Roman"
-    ra_pl.font.size = Pt(12)
-    ra_nm = p_acksig.add_run("G MOHAN JAYANTH (19MIS1127)")
-    ra_nm.font.name = "Times New Roman"
-    ra_nm.font.size = Pt(12)
-    ra_nm.bold = True
+    add_signature_line(b.doc, "Place: Chennai", space_before=25)
+    add_signature_line(b.doc, "Date:", "G MOHAN JAYANTH (19MIS1127)", space_before=8)
 
     b.doc.add_page_break()
 
@@ -987,7 +953,7 @@ def build_section_2(b):
     p_toc_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_toc_t.paragraph_format.space_before = Pt(20)
     p_toc_t.paragraph_format.space_after = Pt(16)
-    r_toc_t = p_toc_t.add_run("TABLE OF CONTENTS")
+    r_toc_t = p_toc_t.add_run("CONTENTS")
     r_toc_t.font.name = "Times New Roman"
     r_toc_t.font.size = Pt(14)
     r_toc_t.bold = True
@@ -999,7 +965,7 @@ def build_section_2(b):
         ("Certificate", "—"),
         ("Abstract", "i"),
         ("Acknowledgement", "ii"),
-        ("Table of Contents", "iii"),
+        ("Contents", "iii"),
         ("List of Figures", "vi"),
         ("List of Tables", "vii"),
         ("List of Acronyms and Symbols", "ix"),
