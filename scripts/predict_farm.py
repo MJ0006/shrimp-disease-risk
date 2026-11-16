@@ -421,6 +421,13 @@ def main() -> int:
                 "loss_cc_bdt": float(loss_cc),
                 "attenuation_bdt": float(abs(loss_cc - loss_em)),
             },
+            # Per-shrimp posteriors, so a viewer (scripts/build_showcase.py) can show each
+            # specimen's call without re-running inference itself.
+            "classes": list(CLASSES),
+            "specimens": [
+                {"id": str(sid), "probs": [float(x) for x in pvec]}
+                for sid, pvec in zip(ordered_specimens, specimen_probs)
+            ],
         }
         print("\n" + "=" * 78)
         print("  JSON RESULT OUTPUT")
